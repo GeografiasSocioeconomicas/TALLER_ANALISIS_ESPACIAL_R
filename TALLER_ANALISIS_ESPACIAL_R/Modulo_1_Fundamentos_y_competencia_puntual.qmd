@@ -1,0 +1,848 @@
+---
+title: "Módulo 1: Fundamentos y Competencia Puntual"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: right
+    font-size: 1.5rem
+editor: visual
+---
+
+**R** es un lenguaje de programación y un entorno de software libre especializado en estadística, análisis y visualización de datos. Lejos de ser un elemento aislado, R integra un conjunto robusto de programas, herramientas y configuraciones necesarios para desarrollar, ejecutar y probar aplicaciones informáticas. Esto lo convierte en un sistema de información general y flexible.
+
+.
+
+En congruencia, cuando R se utiliza para procesar e interpretar datos espaciales, se transforma en un potente **Sistema de Información Geográfica (SIG)**. Al usarse de esta manera, presenta las siguientes fortalezas y debilidades:
+
+.
+
+**Fortalezas de R como SIG**
+
+-   **Automatización**: Permite crear flujos de trabajo repetibles mediante código para procesar mapas masivos sin clics manuales.
+
+-   **Integración estadística**: Une el análisis de datos tradicional con la estadística espacial en una sola plataforma.
+
+-   **Paquetes especializados**: Cuenta con librerías potentes para manejar vectores, rásteres y mapas interactivos.
+
+-   **Reproducción científica**: Facilita que otros investigadores repliquen exactamente el mismo mapa o análisis espacial.
+
+.
+
+**Debilidades de R como SIG**
+
+-   **Curva de aprendizaje**: Requiere saber programar, a diferencia de SIG de escritorio visuales como QGIS o ArcGIS.
+
+-   **Consumo de memoria**: Por defecto, carga los datos en la memoria RAM, lo que dificulta el manejo de archivos geográficos gigantescos.
+
+-   **No permite dibujar ni editar visualmente**: No está diseñado para la edición digital táctil o el dibujo manual de mapas capa por capa. R solo puede graficar elementos si ya tienes las coordenadas exactas o los datos numéricos precisos cargados en el sistema.
+
+.
+
+.
+
+Para aprovechar las fortalezas analíticas de R como SIG, es fundamental preparar un entorno de trabajo eficiente. Una correcta preparación inicial garantiza que las librerías se carguen sin conflictos y que el flujo de trabajo sea completamente reproducible en cualquier equipo.
+
+.
+
+Una librería (también llamada paquete o package) es un conjunto de herramientas listas para usar que amplían las capacidades básicas de R para realizar tareas específicas. Para entenderlo de forma simple, imagine que R básico es un teléfono inteligente nuevo: viene con funciones útiles, pero generales. Las librerías son las aplicaciones (apps) que descargas para agregar la herramienta exacta que necesitas, ya sea para diseñar gráficos hermosos, limpiar datos rápidamente o realizar análisis estadísticos avanzados. En R, la carga de herramientas se puede realizar principalmente de dos formas:
+
+.
+
+\*\*\*\*\* 1. El enfoque tradicional (librería por librería):
+
+Consiste en llamar a cada librería de forma individual utilizando la función library(). La ventaja de este método es que permite identificar de manera aislada los errores potenciales de cada paquete durante su carga (por ejemplo, conflictos de versiones o dependencias faltantes). Sin embargo, su gran desventaja es que exige la instalación manual previa de cada herramienta, lo que rompe la reproducibilidad si otra persona intenta ejecutar el código.
+
+.
+
+\*\*\*\*\* 2. El enfoque automatizado (con "pacman"):
+
+Para resolver las limitaciones del método tradicional, se utiliza la librería pacman. Mediante su uso, el sistema verifica automáticamente si los paquetes requeridos existen en la computadora. Si faltan, los descarga e instala con sus dependencias en un solo paso, y luego los carga.
+
+.
+
+Con el fin de minimizar la posibilidad de errores e intentar un inicio limpio y sin interrupciones, utilizaremos el enfoque automatizado a través de este bloque de código:
+
+```{r}
+# 
+if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
+```
+
+**`if (!require("pacman"))`**: Comprueba si `pacman` ya está instalado. Si no encuentra la libreria, la función devuelve `FALSE` (que el operador `!` invierte a `TRUE`) y ejecuta la siguiente instrucción.
+
+**`dependencies = TRUE`**: Fuerza a R a descargar absolutamente todos los paquetes adicionales que `pacman` necesita para funcionar correctamente.
+
+.
+
+Cargar todas las librerías desde el inicio es una buena práctica por las siguientes razones:
+
+-   **Transparencia y dependencias**: Cualquier persona que abra el archivo sabrá de inmediato qué herramientas y paquetes necesita instalar para que el código funcione.
+
+-   **Evita errores a mitad del camino**: Si falta un paquete, el documento fallará en los primeros segundos de ejecución, evitando que pierdas tiempo corriendo scripts largos que se romperán a la mitad.
+
+-   **Código limpio**: Mantiene el análisis ordenado y evita la duplicación de código o la carga accidental de la misma librería en diferentes secciones
+
+```{r}
+# Con la función p_load() se cargan de manera automática todas las librerías requeridas
+pacman::p_load(
+  # --- Datos y mapas espaciales (GIS) ---
+  sf,                 # Manejo de datos vectoriales geográficos
+  
+  # --- Visualización base y mapas ---
+  ggplot2,            # Sistema de gráficos principal
+  ggspatial,          # Flechas de norte, escalas gráficas, etc.
+  
+  # --- Estética, colores y escalas ---
+  viridis,            # Paletas de colores accesibles y legibles
+  colorspace,         # Modificación y ajuste fino de colores
+  
+  # --- Diseño avanzado de gráficos ---
+  lemon,              # Ejes repetidos y mejoras estéticas
+  gridExtra,          # Combinación de múltiples gráficos en uno
+  ggrepel,            # Etiquetas de texto que no se enciman
+  
+  # --- Manipulación de datos ---
+  dplyr,              # Limpieza y transformación de tablas
+  stringr,            # Limpieza y manipulación de textos
+  classInt,           # Intervalos y rangos de datos
+  
+  # --- Gestión de proyectos e Importación ---
+  here,               # Gestión de rutas de archivos
+  foreign            # Lectura de datos de SPSS, Stata o SAS
+)
+```
+
+**`pacman::p_load(...)`**: Utiliza el operador `::` para llamar a la función `p_load` directamente sin necesidad de cargar todo el paquete `pacman` a la memoria con `library()`.
+
+.
+
+Además de cargar las librerías, también se recomienda aprovechar la parte inicial para establecer otras configuraciones básicas del entorno.
+
+```{r}
+# Parámetros para ocultar mensajes de carga innecesarios
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = TRUE)
+```
+
+**`message = FALSE`** y **`warning = FALSE`**: Oclutan las alertas estéticas y los mensajes informativos que los paquetes emiten al cargarse (los cuales suelen confundirse con fallos del sistema). Es importante aclarar que esta configuración nunca ocultará un error real; si el código contiene un fallo crítico, RStudio detendrá la ejecución y avisará al usuario de inmediato.
+
+**`echo = TRUE`**: Asegura que todo el código escrito sea visible en el reporte final, permitiendo que actúe como una guía de estudio interactiva para los participantes.
+
+.
+
+```{r}
+# Configuraciones para los datos y resultados decimales
+options(
+  scipen = 999,                 # Desactiva notación científica
+  OutDec = "."                  # Uniformidad en punto decimal
+)
+```
+
+**`scipen = 999`**: Desactiva la notación científica. Esto obliga a R a mostrar cifras completas y legibles (por ejemplo, `150000` en lugar de `1.5e+05`), facilitando la lectura de poblaciones o ingresos en los mapas.
+
+**`OutDec = "."`**: Homologa el punto como separador decimal para todos, independientemente del idioma o la configuración regional del sistema operativo de las computadoras.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Entorno espacial y proyecciones
+
+Las estructuras de datos tradicionales —o **aespaciales**— representan en cada fila una unidad de observación (un individuo, una vivienda, un comercio) y en cada columna una variable de interés (edad, ingresos, género). Este enfoque tradicional asume, implícitamente, que los datos flotan en un vacío territorial, ignorando que los fenómenos sociales y económicos ocurren en un espacio geográfico específico.
+
+.
+
+Si ignoramos la dimensión geográfica, nos quedamos a ciegas ante detalles que una tabla de números jamás nos va a mostrar. No podremos ver cómo se reparten los datos, si cambian de un lugar a otro (ya que la realidad no es igual en todas partes), ni qué tan cerca o lejos están territorialmente los valores entre sí. Con la incorporación de la información geográfica, nuestra visión cambia por completo: los datos dejan de ser números fríos atrapados en una tabla para convertirse en puntos y figuras conectados en la vida real.
+
+.
+
+.
+
+**🌍 ¿Qué es `sf?`**
+
+.
+
+El paquete **`sf`** (Simple Features) nos permite fusionar la información estadística con los mapas. Un objeto espacial en `sf` es, en esencia, una tabla de datos común y corriente, pero potenciada con una columna especial al final llamada **`geometry`**.
+
+Esta estructura se divide en **dos componentes indivisibles**:
+
+1.  **La Tabla de Atributos**: Son las columnas tradicionales que ya sabes manipular. Almacenan la información cualitativa o cuantitativa de los elementos (por ejemplo: el nombre de un municipio, su clave geoestadística oficial, su nivel de pobreza o el total de su población).
+
+2.  **La Columna `geometry` (Geometría)**: Es una columna jerárquica y compleja que guarda una lista de coordenadas matemáticas (latitudes, longitudes o proyecciones métricas). R lee esta columna en segundo plano para saber *dónde*, *con qué forma* y *con qué escala* debe proyectar y dibujar el mapa.
+
+.
+
+📐 **Las Entidades Geométricas de un Mapa**
+
+.
+
+Un objeto espacial en `sf` trabaja exclusivamente con **información vectorial**. En este enfoque, la complejidad del mundo real se simplifica y organiza en tres geometrías principales dentro de la columna `geometry`:
+
+-   **`POINT`** (Puntos): Representan ubicaciones exactas mediante un único par de coordenadas \\((X, Y)\\). Se utilizan cuando el tamaño del objeto no importa a la escala que estamos trabajando (por ejemplo: la ubicación de hospitales, escuelas o las viviendas de una encuesta).
+
+-   **`LINESTRING`** (Líneas): Es una secuencia de puntos conectados entre sí. Se usan para dibujar elementos continuos o redes, tales como calles, carreteras, ríos o tuberías de agua.
+
+-   **`POLYGON`** (Polígonos): Son figuras cerradas que delimitan un área específica. Es la geometría principal que utilizaremos en este taller, ya que sirve para representar áreas y fronteras políticas como alcaldías, municipios, estados, países o zonas censales (como los AGEBs).
+
+**⚠️ Nota sobre datos Ráster**
+
+El paquete `sf` **no trabaja con datos ráster** (imágenes satelitales o mapas basados en píxeles). Para manejar ráster en R se recomiendan paquetes como `terra` o `stars`, pero eso no se cubrirá en este taller.
+
+.
+
+.
+
+**📥 ¿Cómo importar una base cartográfica en R?**
+
+**🛠️ La función `sf::st_read()`**
+
+Esta función es el 'lector universal' de bases cartográficas en R. Es capaz de abrir decenas de formatos diferentes (como GeoPackages, Shapefiles, archivos KML de Google Earth, Geodatabases o GeoJSON) utilizando exactamente la misma estructura de código.
+
+Para que R encuentre el mapa sin importar en qué computadora se esté ejecutando el proyecto, utilizaremos una **ruta relativa** que apunte directamente a nuestra carpeta de datos, la cual debe estar guardada en la raíz de nuestro proyecto de RStudio.
+
+.
+
+El formato ***Shapefile*** sigue siendo muy utilizado por gobiernos y diversas organizaciones para compartir datos, a pesar de ser una tecnología antigua y con limitaciones de espacio de almacenamiento. Mostraré cómo importar estas capas tradicionales **solo con fines demostrativos**. La verdadera meta es aprender a trabajar con ***GeoPackage***, una alternativa moderna, compatible con softwares de licencia libre como QGIS, mucho más rápida y eficiente para guardar y manejar las bases cartográficas actualmente.
+
+```{r}
+# Importar el Shapefile tradicional
+limite_zmvm <- st_read("BASES_DE_DATOS/limite_zmvm.shp")
+```
+
+-   **`shp_capa`**: Es el nombre de la variable u objeto donde vamos a guardar la base cartográfica dentro de R. Imagínalo como una caja con una etiqueta donde guardamos la base cartográfica para poder usarla después.
+
+-   **`st_read()`**: Es la función (el comando) que se encarga de abrir y leer los datos geográficos.
+
+-   **`"BASES_DE_DATOS/limite_zmvm.shp"`**: Es la ruta para encontrar el archivo. Al trabajar dentro de un proyecto de R (archivo `.Rproj`), la carpeta de trabajo se define automáticamente. Esto nos permite usar **rutas relativas**, lo que significa que el código buscará los archivos desde la carpeta del proyecto y funcionará en cualquier computadora sin necesidad de escribir rutas largas o fijas.
+
+.
+
+Sin embargo, si no se trabaja con un proyecto de R, se deben utilizar **rutas absolutas**. Cualquier ruta, ya sea relativa o absoluta, debe escribirse entre comillas en su totalidad y se compone de tres elementos clave:
+
+-   **La ubicación**: Es la carpeta exacta donde está guardado el archivo. En una ruta relativa puede ser simplemente `BASES_DE_DATOS/`, pero en una ruta completa se verá como C:/usuarios/nombre_usuario/documentos/BASES_DE_DATOS o D:/BASES_DE_DATOS si usas una memoria USB. En cualquier caso, **verifica siempre que la barra separadora sea diagonal (`/`)** y no la barra invertida (`\`), ya que R no reconoce esta última.
+
+-   **El nombre**: Es el nombre exacto con el que guardaste el archivo (por ejemplo, limite_zmvm.shp). Debe escribirse idéntico, respetando mayúsculas, minúsculas y guiones. No uses acentos (á, é, í...), caracteres especiales (\@, #), eñes (ñ), ni espacios en los nombres de tus carpetas o archivos. R puede fallar si se usa puntos en el nombre porque los puede confundir con la extensión. R prefiere nombres limpios como `"limite_zmvm.shp"` en lugar de `"limite.zm vm"`.
+
+-   **La extensión**: Es el tipo de archivo que indica su formato (en este caso, `.shp`).
+
+(Nota: Es posible que tu archivo no esté dentro de ninguna carpeta explícita y se encuentre directamente en la raíz de tu proyecto o disco duro. En ese caso, la ruta se vería simplemente como `"/limite_zmvm.shp"` o `"C:/limite_zmvm.shp"`).
+
+.
+
+::: callout-tip
+## 💡 Buenas prácticas: Rutas con la librería "here"
+
+Cuando trabajas con datos espaciales (\`sf\`), el código llega a fallar al cambiar de computadora (por ejemplo, entre Windows, Mac o Linux) porque las rutas de las carpetas pueden cambiar.
+
+Para evitarlo, usa el paquete "here".
+
+\# Esto funcionará en CUALQUIER sistema operativo sin cambiar una sola línea shp_capa \<- st_read(here("BASES_DE_DATOS", "`limite_zmvm.shp`"))
+
+Imagina que `here()` es un traductor inteligente. En lugar de escribir rutas largas y confusas llenas de diagonales (`/` o `\`), solo tienes que seguir estas tres reglas:
+
+1.  **Olvídate de las diagonales:** Ya no importará si usas Windows, Mac o Linux.
+
+2.  **Separa con comas:** Usamos una coma \`,\` para separar cada carpeta entre sí, y una última coma para separar la última carpeta del archivo final. Sin embargo, el "nombre del archivo y su extensión" **NO** se separan con comas, van juntos.
+
+3.  **Uso de comillas:** Cada carpeta debe ir encerrada en sus propias comillas. Por su parte, el "nombre del archivo y su extensión van juntos" dentro del mismo par de comillas.
+
+    **`Si tu ruta tiene una carpeta explícita la estructura visual sería:`**
+
+    `here("Carpeta", "nombre_de_archivo.extension")`
+
+    **Si tu archivo está directamente en la raíz (sin carpeta explícita):**
+
+    here("nombre_de_archivo.extension")
+:::
+
+.
+
+.
+
+::: callout-note
+💡 Otos formatos que lee sf
+
+Una de las grandes ventajas de la librería sf es su versatilidad. No solo lee archivos Shapefile (.shp) o GeoPackage (.gpkg). Soporta muchos otros formatos de mapas. Si ya tienes estructurada tu ruta con la función here(), puedes cargar otros tipos de archivos manteniendo exactamente la misma estructura de código y solo cambiando la extensión del archivo.
+
+Para leer un GeoJSON
+
+.
+
+geojson_capa \<- st_read(here("Carpeta", "nombre_del_archivo.geojson"))
+
+.
+
+Para leer un KML (Google Earth)
+
+.
+
+kml_datos \<- st_read(here("Carpeta", "nombre_del_archivo.kml"))
+
+.
+
+¿Y qué pasa con las File Geodatabases (.gdb)? Funciona de forma muy similar a un GeoPackage. Como las Geodatabases son carpetas que guardan múltiples capas e información dentro, la estructura en here() se mantiene igual apuntando a la extensión .gdb, pero debes agregar el nombre de la capa específica que quieres abrir usando el argumento layer:
+
+.
+
+\# Para leer una capa específica dentro de una Geodatabase
+
+.
+
+gdb_cap \<- st_read(here("Carpeta", "nombre_del_archivo.gdb"), layer = "nombre_de_la_capa")
+:::
+
+.
+
+.
+
+Una vez importada la información, es una buena práctica verificar qué tipo de objeto tenemos en R y visualizar el mapa para asegurarnos de que todo se cargó correctamente. Para ello, utilizaremos dos herramientas fundamentales:
+
+```{r}
+# Verificar el tipo de objeto
+class(limite_zmvm)
+```
+
+Como ya habíamos mencionado, la gran ventaja de un objeto **`sf`** es que combina un **`data.frame`** (la tabla de datos tradicional) con la **información geográfica** del mapa (**sf**). Esta estructura doble nos permite manipular los datos numéricos o de texto con total libertad, mientras R mantiene el mapa vinculado de forma automática para dibujarlo con `geom_sf()`.
+
+```{r}
+# Dibujar el mapa en pantalla
+ggplot() +
+  geom_sf(data = limite_zmvm) +
+  theme_minimal() # Opcional: agrega un fondo limpio al mapa
+```
+
+.
+
+.
+
+El paquete `sf` permite guardar fácilmente la información proveniente de un archivo *Shapefile* directamente en un *GeoPackage* (`.gpkg`). Para lograrlo, utilizamos la función `st_write()`, la cual requiere los mismos elementos de ruta que ya aprendimos: la ubicación, el nombre del archivo y la extensión `.gpkg`.
+
+```{r}
+# Guardar la información en el formato moderno GeoPackage
+st_write(
+  obj = limite_zmvm, 
+  dsn = "BASES_DE_DATOS/limite_zmvm.gpkg", 
+  layer = "limite_zmvm",
+  append = TRUE
+)
+```
+
+**`obj = limite_zmvm`**: Es el objeto o variable dentro de R que contiene la información geográfica que importamos del *Shapefile*.
+
+**`dsn = "BASES_DE_DATOS/datos_espaciales.gpkg"`**: Es la ruta con la ubicación, nombre y extensión del archivo *GeoPackage*. Recuerda que este formato funciona como una base de datos o "caja" única donde puedes guardar múltiples mapas.
+
+**`layer = "limite_zmvm"`**: Es el nombre específico (la "etiqueta") que le darás a esta capa en particular dentro del archivo *GeoPackage*.
+
+**`append = TRUE`**: Es un argumento fundamental. Le dice a R que agregue esta nueva capa dentro del archivo `.gpkg` sin borrar ni sobrescribir las otras capas que ya existan adentro.
+
+.
+
+.
+
+Una vez que la información ha sido almacenada de forma segura en el GeoPackage, es recomendable limpiar nuestro entorno de trabajo en R. Eliminar los objetos temporales nos permite liberar memoria RAM, mantener la interfaz ordenada. También, al limpiar el espacio de R, te verás en la necesidad de volver a importar las capas directamente desde el archivo definitivo, asegurando que el código sea reproducible.
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+Ahora procederemos a importar datos en formato GeoPackage (.gpkg). Un GeoPackage funciona como una "caja de almacenamiento" o un contenedor que puede guardar muchas capas de datos vectoriales diferentes (puntos, líneas o polígonos) dentro de un solo archivo. Por esta razón, al usar st_read(), no solo debemos decirle a R dónde está el archivo, sino también especificar exactamente qué capa (layer) queremos importar.
+
+.
+
+Si te pasan un GeoPackage y no sabes qué información contiene, puedes consultar qué capas vectoriales contiene, usando la función st_layers(). Esto te listará todas las capas disponibles sin cargar nada a la memoria:
+
+Ahora procederemos a importar datos en formato GeoPackage (.gpkg). Un GeoPackage funciona como una "caja de almacenamiento" o un contenedor que puede guardar muchas capas de datos vectoriales diferentes (puntos, líneas o polígonos) dentro de un solo archivo. Por esta razón, al usar st_read(), no solo debemos decirle a R dónde está el archivo, sino también especificar exactamente qué capa (layer) queremos importar.
+
+.
+
+Si te pasan un GeoPackage y no sabes qué información contiene, puedes consultar qué capas vectoriales contiene, usando la función st_layers(). Esto te listará todas las capas disponibles sin cargar nada a la memoria:
+
+```{r}
+st_layers(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg")
+  )
+```
+
+.
+
+```{r}
+st_layers(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg")
+  )$name
+```
+
+Al usar \$name después de la estructura de código de st_layers(), se extraen únicamente los nombres de las capas en formato de texto plano.
+
+.
+
+.
+
+Una vez conocidos los nombres de las capas, pasamos a importar la que necesitamos. Para ello, volvemos a usar la función st_read(), pero esta vez agregamos el argumento "layer" para indicarle a R el nombre exacto de la capa que queremos extraer de la "caja de almacenamiento":
+
+```{r}
+# Importamos del limite de la zona metropolitana del Valle de México
+limite <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "limite_zmvm"
+)
+```
+
+.
+
+```{r}
+# Importamos la base cartográfica de las unidades comerciales
+unidades_comerciales_WGS84 <- st_read(
+  here("BASES_DE_DATOS", "comercios_WGS84.gpkg"), 
+  layer = "unidades_comerciales_WGS84"
+)
+```
+
+.
+
+.
+
+**🚨 El problema invisible: Identificación de CRS y Reproyección**
+
+Si intentas graficar estas dos capas juntas en un mismo mapa utilizando `ggplot2` en este momento, notarás que los países vecinos no aparecen o el mapa se rompe. Esto ocurre porque **las capas no hablan el mismo idioma matemático**:
+
+-   La capa del limite mide el mundo en **metros** (`Mexico ITRF2008 / LCC`).
+
+-   La capa de unidades comerciales_WGS84 mide el mundo en **grados** (`WGS 84`).
+
+Para R, intentar juntar metros con grados en un espacio geométrico es imposible porque las cajas de delimitación (`Bounding box`) manejan escalas numéricas completamente distintas. Mientras que una capa se extiende en millones de metros, la otra solo llega hasta unas decenas de grados.
+
+**¿Cómo lo solucionamos?**
+
+Antes de realizar cualquier mapa combinado o análisis espacial, debemos **homogeneizar el Sistema de Referencia de Coordenadas (CRS)**. Esto implica elegir una de las dos capas como base y transformar la otra para que ambas compartan exactamente el mismo CRS mediante una técnica llamada **reproyección**.
+
+.
+
+**🧠 ¿Cómo funciona la asignación de CRS y la Reproyección en R?**
+
+Para que R pueda proyectar una capa sobre otra sin errores, no es necesario que busques y escribas manualmente los complejos códigos de los sistemas de referencia. Podemos resolverlo de forma dinámica mediante dos pasos lógicos:
+
+1.  **Extraer el CRS base:** Usamos la función `st_crs()` para leer y almacenar el "idioma cartográfico" de la capa de referencia (en este caso, nuestro `limite`).
+
+2.  **Transformar la capa destino:** Usamos la función `st_transform()`. R tomará la capa de `unidades_comerciales_WGS84` (que está en grados) y recalculará matemáticamente todas sus coordenadas para adaptarlas exactamente al sistema métrico de México que acabamos de extraer.
+
+.
+
+```{r}
+#VERIFICACIÓN MANUAL: Extraer el CRS de cualquier objeto en cualquier momento
+# Esto te permite checar el sistema de referencia sin depender del mensaje de carga inicial
+crs_limite  <- st_crs(limite)
+crs_unidades_comerciales_WGS84 <- st_crs(unidades_comerciales_WGS84 )
+```
+
+```{r}
+# Imprimir el crs del limite
+print(crs_limite)
+```
+
+```{r}
+# Imprimir el crs de las unidades_comerciales_WGS84
+print(crs_unidades_comerciales_WGS84)
+```
+
+.
+
+.
+
+```{r}
+# REPROYECCIÓN DINÁMICA: Transformar los países vecinos al CRS de México
+# En lugar de escribir el código del CRS a mano, le pasamos el objeto 'crs_ent_fed'
+unidades_comerciales <- st_transform(unidades_comerciales_WGS84, crs = crs_limite)
+```
+
+![](images/clipboard-9133593.png)
+
+```{r}
+# COMPROBACIÓN MANUAL: Verificar que ahora ambos objetos comparten el mismo CRS
+st_crs(unidades_comerciales) == st_crs(limite) # Debería devolver TRUE
+```
+
+**💡 Puntos clave:**
+
+-   **`st_crs()`**: Es tu herramienta de auditoría cartográfica. Al ejecutar `st_crs(objeto)` en la consola, R te desplegará toda la información del sistema de referencia, sus unidades de medida (metros o grados) y su código identificador.
+
+-   **Reproyección segura**: Al hacer `crs = crs_limite` dentro de `st_transform()`, aseguras que tu código sea inmune a errores de dedo. R copia de forma idéntica los parámetros cartográficos de una capa y se los aplica a la otra.
+
+-   **La prueba del `TRUE`**: Si el resultado de la prueba de verificación en la consola es `TRUE`, significa que ambas capas están alineadas en el mismo espacio geométrico y listas para ser dibujadas juntas.
+
+```{r}
+# COMPROBACIÓN GRÁFICA
+ggplot() +
+  # Capa de fondo: Países vecinos en gris claro
+  geom_sf(
+    data = limite, 
+    fill = "#F2F2F2", 
+    color = "#D0D0D0") +
+  
+  # Capa principal: Entidades federativas con bordes definidos
+  geom_sf(
+    data = unidades_comerciales, 
+    color = "red") +
+  
+  # Aplicar un estilo limpio y estético
+  theme_minimal() 
+```
+
+.
+
+.
+
+Puedes guardar esta informacion ya reproyectada:
+
+```{r}
+st_write(
+  obj = unidades_comerciales, 
+  dsn = "BASES_DE_DATOS/comercios_LCC.gpkg", 
+  layer = "unidades_comerciales",
+  append = TRUE
+)
+```
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Limpieza de atributos comerciales.
+
+Cargamos nuestra unidades comerciales
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+```
+
+Antes de proceder con la limpieza, es indispensable inspeccionar la estructura de la tabla de atributos del GeoPackage. Por lo tanto, **revisemos los nombres de las columnas del objeto `sf`** para identificar con precisión el encabezado de la variable que deseamos corregir."
+
+```{r}
+names(unidades_comerciales)
+```
+
+Como hemos visto, los nombres de las columnas del objeto `sf` ya están en minúsculas, por lo que no hay que hacerles ninguna limpieza de formato previa. Podemos pasar directamente a trabajar con ellas en el código utilizando sus nombres tal cual aparecen.
+
+.
+
+Una vez aclarado el formato de los encabezados, **ahora conviene revisar si se tienen valores nulos (`NA`)** en la base de datos. Identificar si faltan registros en las variables clave nos evitará errores al momento de graficar el mapa o realizar cálculos espaciales más adelante.
+
+```{r}
+colSums(is.na(unidades_comerciales))
+```
+
+Como se puede observar en el resultado anterior, el conteo de valores faltantes para todas las variables es igual a cero. Esto nos confirma que **el objeto `sf` no contiene valores nulos (`NA`)**, por lo que contamos con una base de datos íntegra y lista para proceder con el análisis espacial o la visualización sin necesidad de aplicar filtros de limpieza adicionales.
+
+.
+
+.
+
+"Con la base de datos validada y libre de valores nulos, **procederemos a ejecutar dos tipos de filtrado: uno aspaecial y otro espacial**. Primero, utilizaremos la variable `tipoUniEco` para realizar un filtro por tipo de comercio. Este paso segmentará las unidades fijas y semifijas, permitiendo analizar la distribución cartográfica de cada categoría por separado."
+
+```{r}
+unidades_fijas <- unidades_comerciales %>% 
+  filter(tipoUniEco == "Fijo")
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = unidades_fijas) +
+  theme_minimal() 
+```
+
+```{r}
+unidades_semifijas <- unidades_comerciales %>% 
+  filter(tipoUniEco == "Semifijo")
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = unidades_semifijas) +
+  theme_minimal()
+```
+
+**Ahora realizaremos un filtro espacial**. Este paso nos permitirá acotar geográficamente una zona de estudio, aislando únicamente los registros que se ubican dentro de los límites territoriales la misma. Usaremos como ejemplo la entidad federativa de Ciudad de Mexico.
+
+```{r}
+cdmx <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "cdmx"
+)
+```
+
+```{r}
+unidades_cdmx <- st_intersection(unidades_comerciales, cdmx)
+```
+
+```{r}
+# COMPROBACIÓN GRÁFICA
+ggplot() +
+  # Capa de fondo: Países vecinos en gris claro
+  geom_sf(
+    data = cdmx, 
+    fill = "#F2F2F2", 
+    color = "#D0D0D0") +
+  
+  # Capa principal: Entidades federativas con bordes definidos
+  geom_sf(
+    data = unidades_cdmx, 
+    color = "red") +
+  
+  # Aplicar un estilo limpio y estético
+  theme_minimal() 
+```
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Matriz de proximidad lineal
+
+Para comprender la estructura competitiva y los patrones de aglomeración en el territorio, no basta con conocer la ubicación de las unidades económicas; es fundamental cuantificar sus niveles de interacción espacial. Con este propósito, se estructurará una **matriz de proximidad**, la cual actúa como una herramienta matemática para evaluar las dinámicas de coexistencia comercial en el área de estudio.
+
+.
+
+La construcción de esta matriz se llevará a cabo mediante el cálculo de la distancia geométrica lineal entre los diferentes puntos de la capa espacial. Específicamente, **se medirá la distancia exacta en metros al competidor más cercano utilizando la función `st_distance`** de la librería `sf`. Este algoritmo calcula la separación euclidiana u ortodrómica real entre las coordenadas de cada establecimiento, garantizando una precisión métrica rigurosa.
+
+.
+
+Los resultados derivados de este análisis permitirán identificar zonas de alta saturación comercial o, por el contrario, áreas de oportunidad donde la baja densidad de competidores abre espacio para nuevos mercados. Asimismo, esta métrica servirá como base para clasificar los comportamientos de vecindad espacial de las unidades fijas y semifijas previamente filtradas.
+
+.
+
+.
+
+Carguemos la base de toda la zona metropolitana
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+```
+
+Para garantizar la viabilidad técnica del análisis y evaluar la precisión del algoritmo, **primero se realizará un filtro enfocado a la alcadia Coyoacan** como prueba piloto. Esta delimitación cartográfica nos permitirá procesar la matriz de distancias en un entorno controlado y de baja densidad, asegurando que la función `st_distance` calcule los rangos métricos de forma óptima antes de procesar el volumen total de los datos
+
+```{r}
+coyoacan <- unidades_comerciales %>%
+  filter(cve_ent == "09" & cve_mun == "003")
+```
+
+Calculemos la matriz completa de distancias cruzadas eucliadianas
+
+```{r}
+matriz_distancias <- st_distance(coyoacan)
+```
+
+Convertir la matriz de formato "units" a matriz numérica simple en metros
+
+```{r}
+matriz_num <- as.matrix(matriz_distancias)
+```
+
+Reemplazar los ceros de la diagonal (distancia a uno mismo) por NA. Esto evita que el competidor más cercano sea el propio negocio analizado.
+
+```{r}
+diag(matriz_num) <- NA
+```
+
+Extraer el valor mínimo de cada fila (la distancia al competidor más cercano) e incorporarlo como una nueva columna llamada 'dist_competidor_m'
+
+```{r}
+coyoacan <- coyoacan %>%
+  mutate(dist_competidor_m = apply(matriz_num, 1, min, na.rm = TRUE))
+```
+
+Ver la distancia mínima, promedio y máxima entre competidores
+
+```{r}
+summary(coyoacan$dist_competidor_m)
+```
+
+Al evaluar los resultados de la prueba piloto en la alcaldía Coyoacán, los datos del resumen estadístico revelan un patrón de alta concentración y competencia espacial. **La distancia promedio (`Mean`) entre un establecimiento y su competidor más cercano es de apenas 32.26 metros**, mientras que la mitad de los comercios (`Median`) registran un vecino a menos de 13.45 metros. Estos valores métricos confirman una fuerte aglomeración comercial en el territorio, donde incluso el comercio más aislado de la muestra se encuentra a una distancia máxima accesible de 357.41 metros.
+
+.
+
+El análisis de proximidad aplicado a Coyoacán tambien muestra una dinámica de alta saturación en el entorno de los negocios fijos. Con un primer cuartil (`1st Qu.`) y un mínimo de cero metros, se identifica la existencia de clusters o pasajes comerciales donde las unidades operan pared con pared. Asimismo, **el 75% de los comercios evaluados (`3rd Qu.`) tienen a su competidor directo a una distancia menor a los 44.67 metros**, lo que acentúa la necesidad de diseñar estrategias de diferenciación ante un entorno geográfico sumamente competitivo.
+
+.
+
+.
+
+Con la finalidad de estratificar el comportamiento de las unidades económicas y facilitar la interpretación de los datos, **se agruparon las distancias en rangos analíticos y se generó un gráfico de densidad**. Esta metodología nos permite clasificar de forma categórica el nivel de exposición de los comercios en rangos de alta, media y baja proximidad, mientras que el histograma ilustra con precisión matemática la fuerte concentración de establecimientos que compiten en los primeros metros del territorio.
+
+```{r}
+# Clasificacion de comercios
+coyoacan <- coyoacan %>%
+  mutate(rango_competencia = case_when(
+    dist_competidor_m <= 15 ~ "Alta (0 - 15m)",
+    dist_competidor_m > 15 & dist_competidor_m <= 50 ~ "Media (15 - 50m)",
+    dist_competidor_m > 50 ~ "Baja (Más de 50m)"
+  ))
+
+```
+
+```{r}
+# Ver cuántos comercios caen en cada categoría
+table(coyoacan$rango_competencia)
+```
+
+```{r}
+grafico_proximidad <- ggplot(coyoacan, aes(x = dist_competidor_m)) +
+  # Crear el histograma con barras delgadas (ancho de 5 metros por barra)
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "#2c3e50", color = "white", alpha = 0.8) +
+  # Añadir una línea de densidad suave encima
+  geom_density(color = "#e74c3c", size = 1) +
+  # Línea punteada que marca la mediana (13.45 metros)
+  geom_vline(aes(xintercept = median(dist_competidor_m)), color = "#2ecc71", linetype = "dashed", size = 1) +
+  # Limitar el eje X a 150 metros para que se aprecie mejor la concentración inicial
+  xlim(0, 150) + 
+  # Etiquetas y títulos profesionales
+  labs(
+    title = "Distribución de la Distancia al Competidor Más Cercano",
+    subtitle = "Alcaldía Coyoacán (Línea verde representa la mediana: 13.45 metros)",
+    x = "Distancia en metros",
+    y = "Densidad de establecimientos",
+    caption = "Fuente: Cálculos propios basados en capas de unidades comerciales."
+  ) +
+  # Diseño visual limpio
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    axis.title = element_text(face = "bold")
+  )
+
+# Desplegar el gráfico en RStudio
+print(grafico_proximidad)
+```
+
+A través del histograma y la curva de densidad, se hace evidente el fenómeno de co-localización comercial en la demarcación. El comportamiento de las barras grises refleja que la mayor densidad de unidades económicas opera a distancias extremadamente cortas de sus rivales, una estrategia común para capturar flujos peatonales masivos en zonas centrales. Pasando el umbral de los 50 metros, la curva se aplana de manera constante hacia el cero, lo que evidencia que son muy pocos los establecimientos que logran o deciden operar en condiciones de aislamiento geográfico respecto a su competencia directa
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Indicadores de competencia
+
+.
+
+Para transformar las mediciones métricas individuales en variables con significado económico y urbano, se estructurará un análisis basado en **indicadores de competencia**. Mediante estadística descriptiva, el objetivo consiste en clasificar las unidades económicas en dos tipologías polares: aquellas integradas en densas **aglomeraciones gastronómicas** (zonas de alta concentración y competencia) frente a los llamados **negocios aislados**, los cuales operan bajo lógicas de baja densidad competitiva o monopolios de barrio.
+
+.
+
+Esta tipificación se fundamenta directamente en el comportamiento asimétrico observado en el análisis de proximidad. Al segmentar las observaciones a partir de umbrales estadísticos rigurosos (como los cuartiles y la mediana de la distancia), podemos establecer un criterio objetivo para delimitar espacialmente los clústeres donde la co-localización de comercios potencia la atracción de consumidores, diferenciándolos de aquellos establecimientos periféricos cuya cobertura de mercado depende del aislamiento geográfico.
+
+.
+
+Para ello, retomemos Coyoacan
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+coyoacan <- unidades_comerciales %>%
+  filter(cve_ent == "09" & cve_mun == "003")
+matriz_distancias <- st_distance(coyoacan)
+matriz_num <- as.matrix(matriz_distancias)
+diag(matriz_num) <- NA
+coyoacan <- coyoacan %>%
+    mutate(dist_competidor_m = apply(matriz_num, 1, min, na.rm = TRUE))
+```
+
+Criterios estadísticos
+- Aglomeración Gastronómica: Distancia \<= 13.45 metros (Mediana o menos)
+- Negocio Independiente: Distancia entre 13.45 y 44.67 metros
+- Negocio Aislado: Distancia \> 44.67 metros (Tercer cuartil o más)
+
+```{r}
+coyoacan <- coyoacan %>%
+  mutate(indicador_competencia = case_when(
+    dist_competidor_m <= 13.45 ~ "Aglomeración Gastronómica",
+    dist_competidor_m > 13.45 & dist_competidor_m <= 44.67 ~ "Negocio Independiente",
+    dist_competidor_m > 44.67 ~ "Negocio Aislado"
+  ))
+```
+
+```{r}
+# Tabla de frecuencias absolutas (¿Cuántos hay de cada uno?)
+tabla_conteo <- table(coyoacan$indicador_competencia)
+```
+
+```{r}
+print(tabla_conteo)
+```
+
+```{r}
+# 2. Tabla de frecuencias relativas (¿Qué porcentaje representa cada uno?)
+tabla_porcentaje <- prop.table(tabla_conteo) * 100
+```
+
+```{r}
+print(round(tabla_porcentaje, 2))
+```
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+Muchas gracias por completar el primer modulo.

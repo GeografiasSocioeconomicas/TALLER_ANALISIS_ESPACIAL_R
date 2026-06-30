@@ -1,0 +1,593 @@
+---
+title: "Módulo 2: Densidad Visual y Cobertura Territorial"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: right
+    font-size: 1.5rem
+editor: visual
+---
+
+Recordemos que estamos estructurando nuestro proyecto mediante módulos independientes. Es indispensable incluir este bloque de configuración inicial en la parte superior de cada nuevo archivo \`.qmd\` que creemos. Por ello, volver a cargar las librerías base (como \`dplyr o \`sf\`) y definir los parámetros de visualización al inicio de cada módulo no es repetitivo, sino una regla de oro técnica para asegurar que el documento se compile de manera correcta y autónoma en cualquier computadora.
+
+```{r}
+if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
+```
+
+```{r}
+# Con la función p_load() se cargan de manera automática todas las librerías requeridas
+pacman::p_load(
+  # --- Datos y mapas espaciales (GIS) ---
+  sf,                 # Manejo de datos vectoriales geográficos
+  
+  # --- Visualización base y mapas ---
+  ggplot2,            # Sistema de gráficos principal
+  ggspatial,          # Flechas de norte, escalas gráficas, etc.
+  
+  # --- Estética, colores y escalas ---
+  viridis,            # Paletas de colores accesibles y legibles
+  colorspace,         # Modificación y ajuste fino de colores
+  
+  # --- Diseño avanzado de gráficos ---
+  lemon,              # Ejes repetidos y mejoras estéticas
+  gridExtra,          # Combinación de múltiples gráficos en uno
+  ggrepel,            # Etiquetas de texto que no se enciman
+  
+  # --- Manipulación de datos ---
+  dplyr,              # Limpieza y transformación de tablas
+  stringr,            # Limpieza y manipulación de textos
+  classInt,           # Intervalos y rangos de datos
+  
+  # --- Gestión de proyectos e Importación ---
+  here,               # Gestión de rutas de archivos
+  foreign            # Lectura de datos de SPSS, Stata o SAS
+)
+```
+
+```{r}
+# Parámetros para ocultar mensajes de carga innecesarios
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = TRUE)
+# Configuraciones para los datos y resultados decimales
+options(
+  scipen = 999,                 # Desactiva notación científica
+  OutDec = "."                  # Uniformidad en punto decimal
+)
+```
+
+Ahora podemos entrar en materia.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Mapas de calor
+
+.
+
+La representación visual de fenómenos espaciales masivos requiere herramientas cartográficas que trasciendan la simple superposición de puntos en un plano geométrico. En este contexto, el desarrollo de **mapas de calor (Heatmaps)** surge como una técnica fundamental para simplificar la complejidad de las bases de datos geográficas densas. Su propósito principal consiste en transformar un conjunto disperso de coordenadas individuales en una superficie continua que ilustre, de manera inmediata, las variaciones de intensidad en el territorio.
+
+.
+
+A nivel metodológico, la construcción de estos mapas no se limita a un conteo visual de elementos, sino que se fundamenta en algoritmos matemáticos avanzados como la **Estimación de Densidad de Kernel (KDE, por sus siglas en inglés)**. Este procedimiento estadístico aplica una función de suavizado sobre cada unidad económica, calculando una puntuación de densidad basada en la proximidad de los elementos vecinos. Al ponderar la concentración espacial de cada punto de forma matemática, se mitiga el ruido visual y se generan gradientes de color que reflejan con rigor la realidad analítica subyacente.
+
+.
+
+Un componente crítico en la calibración de un mapa de calor es la definición del **ancho de banda o radio de búsqueda (bandwidth)**. Este parámetro determina la distancia máxima a la que un establecimiento puede influir en el cálculo de densidad de las celdas adyacentes. Una elección milimétrica del ancho de banda es indispensable para el éxito del modelo: un radio demasiado amplio suavizará en exceso los datos ocultando dinámicas locales, mientras que un radio demasiado corto fragmentará la superficie en núcleos aislados, impidiendo la identificación de tendencias macrorregionales.
+
+.
+
+Al aplicar esta técnica a las variables de proximidad calculadas previamente, el mapa de calor se convierte en una herramienta analítica predictiva de mercado. Las áreas donde los gradientes de color alcanzan su máxima intensidad, comúnmente denominadas **puntos calientes o hotspots**, revelan con exactitud las zonas de saturación donde las aglomeraciones gastronómicas compiten palmo a palmo por el espacio urbano. Estas configuraciones visuales permiten discriminar a simple vista los corredores comerciales consolidados de aquellas áreas periféricas con nula presencia económica.
+
+.
+
+La ventaja cartográfica del mapa de calor frente a los mapas de puntos convencionales radica en su capacidad para resolver el problema de la saturación por superposición (overplotting). En zonas con alta densidad comercial como Coyoacán, miles de puntos encimados impiden identificar dónde termina un clúster y dónde empieza otro. El mapa de calor corrige esta limitación al sustituir los marcadores discretos por una **rampa cromática continua**, permitiendo al analista evaluar de forma clara la morfología, el tamaño y la dirección de crecimiento de las aglomeraciones comerciales.
+
+.
+
+Asimismo, esta metodología ofrece la flexibilidad de incorporar ponderaciones a través de variables atributo de la base de datos `sf`. Un mapa de calor puede estructurarse de forma simple utilizando solo la ubicación geográfica, o de forma **ponderada** asignando pesos específicos como el personal ocupado, las ventas estimadas o los rangos de la matriz de competencia. Al integrar estas capas de información, la superficie resultante ya no solo representa la cantidad física de locales, sino la magnitud del impacto económico y la fuerza de atracción comercial que ejerce cada zona en el mapa.
+
+.
+
+Finalmente, el mapa de calor actúa como el puente definitivo entre el procesamiento de datos crudos en R y la **toma de decisiones estratégicas de planificación urbana o comercial**. Al proporcionar una abstracción visual intuitiva pero respaldada estadísticamente, esta cartografía facilita la comunicación de los hallazgos a audiencias no técnicas. Es el insumo ideal para identificar áreas de oportunidad de inversión, delimitar zonas de exclusión por sobrecompetencia o diseñar políticas públicas de ordenamiento territorial orientadas a la regulación del comercio.
+
+.
+
+A continuación, **calculemos un mapa de calor con las unidades comerciales de toda la Zona Metropolitana** del Valle de México. Este procedimiento nos permitirá identificar los grandes nodos de centralidad económica y las macro-aglomeraciones que articulan el comercio a lo largo del tejido urbano metropolitano.
+
+.
+
+Dada la magnitud de la base de datos para toda la metrópoli, el procesamiento cartográfico se optimizará mediante una interpolación por rejilla bidimensional. Este enfoque matemático evita la saturación de los recursos del sistema y genera una rampa de color continua que delimita con precisión los principales corredores comerciales y las zonas de amortiguamiento periféricas en toda la región.
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+limite_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "limite_zmvm"
+)
+```
+
+```{r}
+# Asegurar que ambos mapas usen exactamente la misma proyección (CCL en metros)
+# Tomamos el CRS nativo que ya tiene tu mapa de límite
+crs_limite <- st_crs(limite_zmvm)
+unidades_comerciales <- st_transform(unidades_comerciales, crs = crs_limite)
+
+# Limpieza estricta de geometrías nulas o vacías
+zmvm_limpia <- unidades_comerciales %>%
+  filter(!st_is_empty(geom)) %>% 
+  filter(!is.na(st_dimension(geom)))
+
+# Extraemos las coordenadas individuales X e Y manteniendo la estructura sf
+zmvm_mapa <- zmvm_limpia %>%
+  mutate(
+    X = st_coordinates(geom)[, 1],
+    Y = st_coordinates(geom)[, 2]
+  )
+
+
+
+```
+
+```{r}
+mapa_calor_zmvm <- ggplot() +
+  
+  # Capa 1: Mapa de calor usando la variable interna "..level.." para evitar decimales feos
+  stat_density_2d_filled(
+    data = zmvm_mapa, 
+    aes(x = X, y = Y, fill = after_stat(level)), # Evita la notación científica (e-10)
+    geom = "polygon", 
+    bins = 10, # Reducimos a 10 niveles para que la leyenda sea más compacta y no se encime
+    alpha = 0.85
+  ) +
+  
+  # Capa 2: Límite transparente al frente
+  geom_sf(data = limite_zmvm, fill = NA, color = "black", linewidth = 0.5) +
+  
+  # Paleta invertida (Amarillo/Blanco = Máxima densidad, Negro/Morado = Baja)
+  scale_fill_viridis_d(option = "inferno", direction = -1) +
+  
+  # Títulos y etiquetas corregidas
+  labs(
+    title = "Mapa de Calor de Densidad Comercial",
+    subtitle = "Zonas de Alta Concentración en la Zona Metropolitana (ZMVM)",
+    fill = "Nivel de Densidad",
+    caption = "Fuente: Estimación de Densidad de Kernel (KDE) sobre el límite oficial ZMVM."
+  ) +
+  
+  # Forzar el sistema geográfico para que mantenga la proporción correcta
+  coord_sf(crs = crs_limite) +
+  
+  # Ajustes de diseño para que NADA se encime
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 15, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 10, color = "gray30", margin = margin(b = 15)), # Da espacio abajo
+    panel.grid = element_line(color = "gray90", linewidth = 0.2),
+    legend.position = "right",
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+
+```
+
+```{r}
+print(mapa_calor_zmvm)
+```
+
+.
+
+El análisis del mapa de calor de la Zona Metropolitana del Valle de México (ZMVM) revela un patrón macro-urbano marcadamente **monocéntrico** en la distribución de la actividad comercial. El núcleo de máxima saturación (representado por el *hotspot* de color oscuro/azul en el centro de la rampa invertida) se localiza con precisión en la región central de la metrópoli, abarcando las alcaldías Cuauhtémoc, Miguel Hidalgo y Benito Juárez. Esta configuración espacial demuestra que, a pesar del crecimiento periférico de la urbe, el centro histórico y sus áreas adyacentes continúan fungiendo como el principal nodo de atracción y aglomeración de unidades económicas.
+
+.
+
+A partir del núcleo central de máxima densidad, se observa cómo el gradiente cromático se expande de forma asimétrica hacia el norte, oriente y sur, delineando los principales ejes viales de conectividad metropolitana. Destacan ramificaciones secundarias hacia zonas de alta densidad poblacional como Ecatepec, Nezahualcóyotl y Naucalpan, donde el comercio se agrupa en corredores específicos. Por el contrario, las extensas áreas periféricas cubiertas por el tono amarillo claro (nivel de densidad mínimo) confirman que el resto del territorio metropolitano mantiene una oferta comercial dispersa o de baja escala, supeditada a las lógicas de abastecimiento estrictamente locales
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Áreas de influencia
+
+.
+
+El análisis del entorno comercial no se limita a evaluar la separación lineal entre competidores, sino que requiere estudiar el espacio geográfico inmediato sobre el cual un negocio ejerce su capacidad de atracción de clientes. En este contexto, el desarrollo de **áreas de influencia** constituye una metodología fundamental para modelar la cobertura territorial de los establecimientos. Este enfoque permite trazar fronteras teóricas alrededor de cada coordenada, delimitando la superficie exacta donde se concentran los consumidores potenciales y donde el impacto operativo de la unidad económica es más intenso.
+
+.
+
+A nivel cartográfico, la creación de estas zonas se ejecuta mediante operaciones de geometría computacional de alta precisión. Específicamente, **se estructuran radios de proximidad caminable alrededor de los puntos utilizando la función `st_buffer`** de la librería `sf`. Este algoritmo matemático expande vectorialmente la coordenada del punto original de manera uniforme en todas direcciones, transformando un marcador bidimensional discreto en un polígono circular continuo cuyo radio representa una distancia métrica real previamente parametrizada por el analista.
+
+.
+
+Para fines de este estudio, se ha establecido un radio de búfer fijo de **500 metros**, una medida estandarizada internacionalmente en el urbanismo y el geomarketing para representar la "escala del peatón". Esta distancia equivale aproximadamente a una caminata continua de entre 5 y 7 minutos a una velocidad promedio, considerada el umbral crítico que un consumidor urbano está dispuesto a recorrer a pie para realizar compras de primera necesidad o acceder a servicios gastronómicos locales antes de optar por un medio de transporte motorizado.
+
+.
+
+Al proyectar simultáneamente estos búferes sobre un tejido metropolitano denso, la herramienta cartográfica revela de inmediato las zonas de conflicto y competencia directa. Las áreas donde los círculos de 500 metros se intersectan o enciman evidencian una **superposición de áreas de captación**, lo que significa que múltiples comercios se disputan exactamente al mismo grupo de residentes o peatones. Cuanto mayor sea el solapamiento entre polígonos, más saturado estará el mercado local y mayor será el riesgo de canibalización comercial entre las unidades del sector.
+
+.
+
+Un requisito metodológico indispensable para la correcta ejecución de `st_buffer` es operar sobre un sistema de coordenadas proyectado que utilice el metro como unidad de medida, como la **Cónica Conforme de Lambert (CCL)**. Si la función se aplicara sobre coordenadas geográficas en grados decimales, el algoritmo interpretaría el parámetro numérico como grados angulares, desvirtuando por completo la escala del mapa. Al trabajar con la proyección CCL nativa, garantizamos que cada polígono generado tenga una superficie perfectamente circular y equivalente a un radio de 500 metros reales sobre el terreno.
+
+.
+
+Finalmente, el principal valor analítico de generar polígonos de amortiguamiento con `st_buffer` radica en su capacidad para servir como contenedores de información para el cruce de variables de terceros. Una vez delimitados los radios de 500 metros, es posible realizar intersecciones espaciales con capas del censo (como los datos por manzana del INEGI). Esto permite transicionar de un análisis puramente geométrico a uno socioeconómico, calculando con exactitud cuánta población total, cuántas viviendas o qué nivel de ingreso promedio habita dentro del área de influencia peatonal de cada negocio.
+
+.
+
+Con el propósito de evaluar las dinámicas de competencia y accesibilidad peatonal a nivel micro-urbano, **se delimitaron las áreas de influencia de 500 metros exclusivamente para la alcaldía Coyoacán**. Al restringir el análisis a esta escala local, el modelo conserva la individualidad de los polígonos generados por la función `st_buffer`."
+
+.
+
+"Este enfoque metodológico detallado nos permite visualizar con precisión el solapamiento de mercado entre establecimientos vecinos dentro del tejido de la alcaldía. Al no disolver las geometrías, cada radio de caminabilidad mantiene asociados sus atributos originales, sentando las bases operativas para identificar los corredores con mayor saturación de clientes potenciales en el territorio."
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+coyoacan <- unidades_comerciales %>%
+  filter(cve_ent == "09" & cve_mun == "003")
+
+
+municipios_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "municipios_zmvm"
+)
+limite_coyoacan <- municipios_zmvm  %>%
+  filter(CVEGEO == "09003")
+```
+
+```{r}
+# Generar las áreas de influencia individuales de 500 metros
+# Al aplicarlo directamente sobre el objeto 'sf', cada círculo hereda su fila correspondiente
+coyoacan_buffers <- st_buffer(coyoacan, dist = 500)
+```
+
+```{r}
+mapa_buffers_coyoacan <- ggplot() +
+  # 1. Dibujar los buffers individuales con transparencia (alpha) para notar los encimes
+  geom_sf(data = coyoacan_buffers, fill = "#2ecc71", color = "#27ae60", linewidth = 0.1, alpha = 0.3) +
+  
+  # 2. Dibujar los puntos originales al centro de cada círculo para referencia visual
+  geom_sf(data = coyoacan, color = "#e74c3c", size = 0.5) +
+  
+  # Limitar la vista del mapa para encuadrar solo la zona de Coyoacán y no ver toda la ZMVM
+  coord_sf(
+    xlim = st_bbox(coyoacan_buffers)[c(1, 3)], 
+    ylim = st_bbox(coyoacan_buffers)[c(2, 4)],
+    crs = st_crs(limite_coyoacan)
+  ) +
+  # 3. Dibujar el fondo del contorno de Coyoacán (Si tienes una capa de municipios/alcaldías)
+    geom_sf(data = limite_coyoacan, fill = NA, color = "black", linewidth = 0.4) +
+  
+  # Títulos y diseño del mapa
+  labs(
+    title = "Radios de Proximidad Caminable (500 metros)",
+    subtitle = "Áreas de influencia individuales y solapamientos en Coyoacán",
+    x = "Longitud",
+    y = "Latitud",
+    caption = "Fuente: Elaboración propia utilizando st_buffer en R."
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    panel.grid = element_line(color = "gray92", linewidth = 0.2)
+  )
+
+```
+
+```{r}
+print(mapa_buffers_coyoacan)
+```
+
+.
+
+El mapa resultante de las áreas de influencia evidencia una **cobertura peatonal prácticamente total e ininterrumpida** a lo largo del territorio de Coyoacán. Al proyectar los radios de 500 metros desde cada establecimiento fijo, se observa que casi la totalidad de la traza urbana de la alcaldía queda integrada dentro de los perímetros de caminabilidad. Este hallazgo cartográfico demuestra que el tejido residencial de la demarcación goza de un acceso inmediato a pie a la oferta de servicios analizada, consolidando un entorno donde las distancias críticas de traslado peatonal están plenamente cubiertas.
+
+.
+
+A nivel de competencia, la visualización cartográfica expone un fenómeno masivo de **solapamiento de mercados (market overlapping)**. La densa aglomeración de polígonos verdes transparentes —que se intensifican y oscurecen en los ejes centrales y corredores principales de la alcaldía— revela que un mismo grupo de consumidores potenciales es disputado simultáneamente por decenas de establecimientos. Este patrón de vecindad extrema corrobora que la estrategia de localización predominante en Coyoacán se basa en capturar flujos en zonas de alta centralidad, asumiendo una fuerte presión de competencia espacial a cambio de proximidad física.
+
+.
+
+Morfológicamente, los radios de proximidad caminable de 500 metros dibujan la silueta de los principales ejes y arterias comerciales de Coyoacán, los cuales se alinean con los puntos rojos que señalan el núcleo de cada negocio. La continuidad espacial de la mancha verde confirma que no existen fragmentaciones significativas o 'desiertos comerciales' en la zona urbana consolidada de la alcaldía, lo que valida la viabilidad del comercio a escala peatonal y resalta el alto grado de madurez y densificación del mercado comercial en esta región metropolitana.
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Disolución geométrica
+
+.
+
+El análisis geoestadístico de las áreas de influencia individuales de 500 metros presenta una limitación geométrica inherente cuando se evalúan mercados altamente densificados. Debido a la colindancia extrema entre establecimientos, los polígonos circulares se superponen de manera masiva, generando zonas donde un mismo fragmento de suelo es contabilizado decenas de veces por diferentes unidades económicas. Si se calculara la superficie sumando el área de cada círculo de forma independiente, se incurriría en un error metodológico de doble conteo, arrojando una cifra artificial que superaría con creces la extensión territorial real de la región bajo estudio.
+
+.
+
+Para corregir esta distorsión y obtener métricas geográficas rigurosas, es indispensable aplicar un proceso de **disolución geométrica**. Esta técnica cartográfica consiste en fusionar entidades espaciales vecinas o superpuestas que comparten una lógica territorial común. Al disolver las fronteras interiores de los polígonos encimados, el analista transiciona de un modelo basado en capas discretas y competitivas hacia un modelo de superficie única, capaz de representar la huella geográfica real y consolidada del fenómeno económico analizado.
+
+.
+
+En el entorno de programación de R, esta unificación espacial se ejecuta de manera automatizada mediante la implementación de **la función `st_union`** de la librería `sf`. El algoritmo de este comando analiza las coordenadas vectoriales de todos los búferes y funde de manera matemática aquellas geometrías que intersectan sus perímetros. El resultado de esta operación es la creación de un objeto espacial de tipo multipolígono que suprime la redundancia cartográfica, optimizando la base de datos y aislando la verdadera extensión espacial continua que abarca la oferta comercial a escala de barrio.
+
+.
+
+La aplicación de `st_union` marca una división conceptual profunda dentro del desarrollo de la investigación. Mientras que los mapas anteriores —basados en círculos translúcidos y mapas de calor— tenían como objetivo evaluar la densidad de la competencia y el grado de saturación del mercado, la disolución geométrica está diseñada exclusivamente para medir la **cobertura y la accesibilidad ciudadana**. Este paso metodológico permite responder a la pregunta fundamental de qué tan extendido está el servicio en el territorio, independientemente de qué tan reñida sea la competencia interna entre los oferentes.
+
+.
+
+Una vez consolidada la superficie única mediante la disolución, el script permite calcular el **área neta de cobertura comercial expresada en metros cuadrados** (o kilómetros cuadrados). Gracias a que los datos operan nativamente bajo la proyección Cónica Conforme de Lambert (CCL), la cual conserva la proporcionalidad de las áreas sobre el plano, el cálculo numérico derivado carece de distorsiones cartográficas. Esta superficie real representa el espacio geográfico efectivo que se encuentra a una distancia caminable y accesible para cualquier peatón en la alcaldía.
+
+.
+
+Finalmente, la culminación de esta disolución geométrica permite estructurar el indicador de **cobertura porcentual del territorio**. Al dividir la superficie real unificada entre el área total de la demarcación, se obtiene una métrica estandarizada que resume la eficiencia de la distribución comercial a escala local. Este porcentaje actúa como el dato definitivo de cierre metodológico, ofreciendo una cifra sintética de alta utilidad para tomadores de decisiones, inversionistas o planificadores orientados a evaluar el nivel de madurez, conectividad y consolidación urbana del municipio piloto.
+
+.
+
+Carguemos nuestros datos.
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+coyoacan <- unidades_comerciales %>%
+  filter(cve_ent == "09" & cve_mun == "003")
+
+
+municipios_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "municipios_zmvm"
+)
+limite_coyoacan <- municipios_zmvm  %>%
+  filter(CVEGEO == "09003")
+```
+
+```{r}
+# Generar las áreas de influencia individuales de 500 metros
+# Al aplicarlo directamente sobre el objeto 'sf', cada círculo hereda su fila correspondiente
+coyoacan_buffers <- st_buffer(coyoacan, dist = 500)
+```
+
+```{r}
+# DISOLUCIÓN GEOMÉTRICA (FUSIONAR LOS BÚFERES)
+
+# Unificar todos los círculos de 500m de Coyoacán en una sola mancha continua
+cobertura_disuelta <- st_union(coyoacan_buffers)
+
+# Recortar la mancha resultante usando el límite exacto de la alcaldía
+# Esto elimina los desbordamientos fuera de las fronteras de Coyoacán
+cobertura_coyoacan <- st_intersection(cobertura_disuelta, st_geometry(limite_coyoacan))
+```
+
+```{r}
+# CÁLCULO DE SUPERFICIES REALES (EN KILÓMETROS CUADRADOS)
+
+# Calcular el área total de la Alcaldía Coyoacán
+area_total_m2 <- st_area(limite_coyoacan)
+area_total_km2 <- as.numeric(area_total_m2) / 1000000
+
+# Calcular el área real cubierta por el comercio (sin doble conteo)
+area_cubierta_m2 <- st_area(cobertura_coyoacan)
+area_cubierta_km2 <- as.numeric(area_cubierta_m2) / 1000000
+```
+
+```{r}
+# GENERACIÓN DE INDICADORES PORCENTUALES
+
+# Calcular el porcentaje de territorio cubierto
+porcentaje_cobertura <- (area_cubierta_km2 / area_total_km2) * 100
+
+# Calcular el porcentaje de desierto comercial (vacíos de abasto)
+porcentaje_desierto <- 100 - porcentaje_cobertura
+
+```
+
+```{r}
+# DESPLEGAR RESULTADOS EN CONSOLA
+
+cat("====================================================\n")
+cat("       INDICADORES DE COBERTURA GEOMÉTRICA          \n")
+cat("====================================================\n")
+cat(paste("Superficie Total de Coyoacán:     ", round(area_total_km2, 2), "km²\n"))
+cat(paste("Superficie Real Comercial:         ", round(area_cubierta_km2, 2), "km²\n"))
+cat(paste("Porcentaje de Cobertura Peatonal:  ", round(porcentaje_cobertura, 2), "%\n"))
+cat(paste("Porcentaje de Desierto Comercial:  ", round(porcentaje_desierto, 2), "%\n"))
+cat("====================================================\n")
+```
+
+.
+
+Los indicadores derivados de la disolución geométrica aportan certidumbre estadística sobre la alta accesibilidad que caracteriza al territorio. De una superficie total de **53.62 km²** que componen la alcaldía Coyoacán, la oferta comercial consolidada abarca una superficie real de **52.39 km²**. Esto se traduce en un sobresaliente **97.7% de cobertura peatonal**, lo que confirma un modelo de ciudad de proximidad donde la ciudadanía dispone de opciones de abasto a menos de 5 minutos de caminata. Por su parte, el desierto comercial queda restringido a un marginal **2.3%** del territorio, localizándose de forma exclusiva en zonas de reserva ecológica, grandes infraestructuras viales o áreas de acceso restringido.
+
+.
+
+El cálculo de la huella comercial sin duplicidades revela la madurez del mercado inmobiliario y comercial en la demarcación. Con un **97.7% del suelo cubierto por los radios de influencia de 500 metros**, Coyoacán se consolida como un espacio urbano densamente servido, donde prácticamente no existen nichos geográficos desatendidos. El análisis geométrico demuestra que la expansión de nuevos comercios fijos ya no responde a la necesidad de colonizar áreas desprovistas de servicios, sino a una estrategia de competencia interna y captura de flujos dentro de un mercado que ya opera en condiciones de saturación espacial.
+
+.
+
+El proceso de unificación espacial mediante `st_union` valida la hipótesis de una cobertura comercial generalizada. El indicador sintético arroja que **el 97.7% de la demarcación se encuentra plenamente integrada bajo rangos de caminabilidad peatonal**, dejando únicamente un **2.3% (equivalente a 1.23 km²)** como desierto comercial. Estos resultados cuantitativos demuestran la eficiencia de la distribución espacial de los establecimientos fijos y cierran el diagnóstico metodológico con una métrica precisa del nivel de inclusión y conectividad comercial en la alcaldía de estudio.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Brechas comerciales
+
+.
+
+La validación metodológica completada con éxito en la alcaldía Coyoacán constituye la línea base operativa del estudio, pero un diagnóstico metropolitano integral exige trascender las fronteras de un único caso de éxito local. Con el objetivo de profundizar en la comprensión de las asimetrías urbanas y comerciales de la región, **se procederá a aplicar la misma secuencia de algoritmos geoespaciales en un segundo municipio de estudio (Zumpango)**. Este análisis comparativo resulta fundamental para someter el modelo de proximidad a diferentes condiciones de densidad poblacional, conectividad vial e infraestructura socioeconómica.
+
+.
+
+Mientras que el caso piloto reflejó las dinámicas propias de una centralidad urbana madura y densamente servida, la incorporación de una nueva demarcación —con características socio-espaciales contrastantes o de carácter periférico— permitirá poner a prueba la variabilidad de las métricas. Este ejercicio metodológico busca confrontar la alta consolidación habitacional con entornos donde la traza urbana aún se encuentra en fases de expansión, lo que alterará de manera previsible la geometría de las áreas de influencia y los radios de caminabilidad peatonal de 500 metros.
+
+.
+
+Este paso consolida la replicabilidad y estandarización del flujo de trabajo diseñado en R. Al automatizar la limpieza de geometrías nulas, la extracción de coordenadas bajo la proyección Cónica Conforme de Lambert (CCL) y el cálculo matemático con la función `st_buffer`, se garantiza que los indicadores de este segundo municipio sean perfectamente homogéneos con los ya obtenidos. Esta estricta consistencia en la sintaxis de programación elimina los sesgos metodológicos y asegura que las diferencias observadas correspondan de manera fiel a las dinámicas del territorio y no a discrepancias en el procesamiento de los datos.
+
+.
+
+Carguemos los datos
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+zumpango <- unidades_comerciales %>%
+  filter(cve_ent == "15" & cve_mun == "120")
+
+
+municipios_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "municipios_zmvm"
+)
+
+limite_zumpango <- municipios_zmvm  %>%
+  filter(CVEGEO == "15120")
+```
+
+```{r}
+# ÁREAS DE INFLUENCIA 
+
+# Crear los búferes individuales de 500 metros
+zumpango_buffers <- st_buffer(zumpango, dist = 500)
+
+# Unificar (disolver) todos los polígonos para evitar el doble conteo de área
+cobertura_disuelta_zumpango <- st_union(zumpango_buffers)
+
+# Recortar la cobertura resultante estrictamente dentro del borde de Zumpango
+cobertura_real_zumpango <- st_intersection(cobertura_disuelta_zumpango, st_geometry(limite_zumpango))
+```
+
+```{r}
+# EXTRACCIÓN DE BRECHAS (DESIERTOS ALIMENTARIOS)
+
+# Restar la mancha comercial al polígono base de Zumpango para aislar los huecos
+desiertos_zumpango <- st_difference(st_geometry(limite_zumpango), cobertura_real_zumpango)
+```
+
+```{r}
+# CÁLCULO DE SUPERFICIES Y RATIOS PORCENTUALES
+
+
+# Superficie total del municipio (de metros cuadrados a kilómetros cuadrados)
+area_tot_m2 <- st_area(limite_zumpango)
+area_tot_km2 <- as.numeric(area_tot_m2) / 1000000
+
+# Superficie real con cobertura comercial peatonal
+area_cob_m2 <- st_area(cobertura_real_zumpango)
+area_cob_km2 <- as.numeric(area_cob_m2) / 1000000
+
+# Porcentajes finales
+pct_cobertura <- (area_cob_km2 / area_tot_km2) * 100
+pct_desierto <- 100 - pct_cobertura
+```
+
+```{r}
+# DESPLEGAR INDICADORES COMPARATIVOS EN CONSOLA
+# ==============================================================================
+cat("====================================================\n")
+cat("      INDICADORES DE COBERTURA GEOMÉTRICA: ZUMPANGO \n")
+cat("====================================================\n")
+cat(paste("Cantidad de Comercios:       ", nrow(zumpango), "\n"))
+cat(paste("Superficie Total del Municipio:    ", round(area_tot_km2, 2), "km²\n"))
+cat(paste("Superficie Real Comercial:         ", round(area_cob_km2, 2), "km²\n"))
+cat(paste("Porcentaje de Cobertura Peatonal:  ", round(pct_cobertura, 2), "%\n"))
+cat(paste("Porcentaje de Desierto Comercial:  ", round(pct_desierto, 2), "%\n"))
+cat("====================================================\n")
+```
+
+Los indicadores geográficos de Zumpango revelan un contraste estructural profundo respecto a las dinámicas observadas en la prueba piloto de Coyoacán, evidenciando las severas asimetrías que fracturan la Zona Metropolitana. Con una extensión territorial significativamente mayor (**222.13 km²**) pero con apenas **842 comercios**, la superficie real de cobertura comercial caminable se restringe a **66.52 km²**. Esto significa que **el porcentaje de cobertura peatonal cae drásticamente al 29.94%**, consolidando un modelo de dispersión donde **el 70.06% del municipio constituye un desierto comercial**. Esta preocupante brecha confirma que la periferia norte opera bajo lógicas de baja conectividad y desabasto, donde la escala del peatón es insuficiente y la población se ve obligada a depender del transporte motorizado para satisfacer sus necesidades básicas.
+
+.
+
+El análisis de la huella comercial en Zumpango expone de forma nítida la desconexión entre el crecimiento habitacional y la infraestructura de servicios en las periferias metropolitanas. A diferencia del tejido consolidado y continuo de las centralidades urbanas, los 842 comercios del municipio se agrupan en núcleos aislados (como el centro histórico local o fraccionamientos habitacionales específicos), dejando inmensos vacíos territoriales sin cobertura. El hecho de que siete de cada diez kilómetros cuadrados (**70.06%**) estén catalogados como desiertos comerciales refleja una morfología urbana fragmentada, donde los desarrollos de vivienda masiva muchas veces se construyen desprovistos de un tejido comercial local accesible a pie.
+
+.
+
+```{r}
+mapa_brechas_zumpango <- ggplot() +
+  # Fondo: El municipio completo
+  geom_sf(data = limite_zumpango, fill = "gray93", color = "gray60", linewidth = 0.5) +
+  
+  # Cobertura caminable en verde tenue
+  geom_sf(data = cobertura_real_zumpango, fill = "#d4efdf", color = NA, alpha = 0.6) +
+  
+  # Resaltar brechas/desiertos alimentarios en rojo brillante
+  geom_sf(data = desiertos_zumpango, fill = "#e74c3c", color = "#c0392b", linewidth = 0.3) +
+  
+  labs(
+    title = "Detección Gráfica de Brechas Comerciales: Zumpango",
+    subtitle = "Zonas rojas representan el territorio fuera del rango caminable (500m)",
+    x = "Longitud", y = "Latitud",
+    caption = "Fuente: Análisis de brechas espaciales en R."
+  ) +
+  coord_sf(crs = st_crs(limite_zumpango)) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 10, color = "gray30"),
+    panel.grid = element_line(color = "gray90", linewidth = 0.2)
+  )
+```
+
+```{r}
+print(mapa_brechas_zumpango)
+```
+
+El mapa visualiza con precisión la magnitud de los **desiertos comerciales** en la periferia norte de la metrópoli. La masiva presencia del color rojo —que domina las franjas norte, sur y el extremo oriente del municipio— demuestra que la escala peatonal es inviable para la mayor parte del suelo de Zumpango. Al restar la huella comercial del mapa base, queda en evidencia que los residentes de estas extensas zonas rojas se encuentran desprovistos de comercios fijos a distancias caminables (500 metros), lo que perpetúa una dependencia estructural hacia el transporte motorizado o colectivo y acentúa las condiciones de vulnerabilidad alimentaria y de servicios en la periferia.
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+Muchas gracias por completar el segundo modulo.

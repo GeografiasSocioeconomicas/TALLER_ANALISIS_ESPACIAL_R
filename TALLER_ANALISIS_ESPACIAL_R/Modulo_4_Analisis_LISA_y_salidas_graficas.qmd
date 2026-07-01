@@ -1,0 +1,503 @@
+---
+title: "Módulo 4: Análisis LISA y Salidas Gráficas"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: right
+    font-size: 1.5rem
+editor: visual
+---
+
+Recordemos que estamos estructurando nuestro proyecto mediante módulos independientes. Es indispensable incluir este bloque de configuración inicial en la parte superior de cada nuevo archivo \`.qmd\` que creemos. Por ello, volver a cargar las librerías base (como \`dplyr o \`sf\`) y definir los parámetros de visualización al inicio de cada módulo no es repetitivo, sino una regla de oro técnica para asegurar que el documento se compile de manera correcta y autónoma en cualquier computadora.
+
+```{r}
+if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
+```
+
+```{r}
+# Con la función p_load() se cargan de manera automática todas las librerías requeridas
+pacman::p_load(
+  # --- Datos y mapas espaciales (GIS) ---
+  sf,                 # Manejo de datos vectoriales geográficos
+  spdep,               # Redes de vecindad y dependencia espacial
+  sfdep,              # Indice local de Moran
+  
+  # --- Visualización base y mapas ---
+  ggplot2,            # Sistema de gráficos principal
+  ggspatial,          # Flechas de norte, escalas gráficas, etc.
+  
+  # --- Estética, colores y escalas ---
+  viridis,            # Paletas de colores accesibles y legibles
+  colorspace,         # Modificación y ajuste fino de colores
+  
+  # --- Diseño avanzado de gráficos ---
+  lemon,              # Ejes repetidos y mejoras estéticas
+  gridExtra,          # Combinación de múltiples gráficos en uno
+  ggrepel,            # Etiquetas de texto que no se enciman
+  
+  # --- Manipulación de datos ---
+  dplyr,              # Limpieza y transformación de tablas
+  tidyr,              # Manipulacion de datos
+  stringr,            # Limpieza y manipulación de textos
+  classInt,           # Intervalos y rangos de datos
+  
+  # --- Gestión de proyectos e Importación ---
+  here,               # Gestión de rutas de archivos
+  foreign            # Lectura de datos de SPSS, Stata o SAS
+)
+```
+
+```{r}
+# Parámetros para ocultar mensajes de carga innecesarios
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = TRUE)
+# Configuraciones para los datos y resultados decimales
+options(
+  scipen = 999,                 # Desactiva notación científica
+  OutDec = "."                  # Uniformidad en punto decimal
+)
+```
+
+Ahora podemos entrar en materia.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Índice de Moran Local
+
+.
+
+Ahora vamos a aprender a usar una herramienta clave en el análisis espacial llamada **Índice de Moran Local**. Imaginen que quieren evaluar la distribución de los negocios de comida in situ en la ZMVM y necesitan saber si estos locales se acomodan al azar o si siguen un orden matemático. Esta herramienta nos ayuda a descubrir esos patrones con precisión estadística, yendo más allá de lo que nuestra vista puede notar en un mapa simple.
+
+.
+
+Cuando vemos un mapa de la ZMVM lleno de puntos que representan restaurantes o cafeterías, nuestro cerebro intenta buscar orden y conexiones de forma natural. Sin embargo, los mapas visuales pueden engañarnos y hacernos creer que hay tendencias importantes donde solo hay coincidencias geográficas. El Moran Local es un filtro estadístico que nos quita las dudas y nos dice si la ubicación de los comercios tiene un sustento matemático real.
+
+.
+
+Para entender este análisis, debemos recordar la regla de oro de la geografía: las cosas cercanas suelen parecerse más que las cosas lejanas. En nuestro caso de estudio, esto significa que una unidad comercial se ve influenciada por la presencia y las características de los restaurantes que tiene a la redonda. El Moran Local evalúa cada establecimiento junto con su entorno para entender cómo se relacionan dentro del espacio urbano.
+
+.
+
+A diferencia del Moran Global, que nos da un solo número general y abstracto para toda la ZMVM, el Moran Local es detallado, específico y enfocado en el territorio. Esta función, llamada `local_moran`, analiza el mapa sección por sección o colonia por colonia. Nos permite ponernos una lupa virtual para descubrir qué pasa en vecindarios específicos, como Polanco, el Centro Histórico o Ecatepec.
+
+.
+
+El objetivo principal de utilizar `local_moran` es identificar la existencia de **agrupamientos espaciales** respaldados por un rigor estadístico. En el análisis comercial, esto nos permite validar científicamente si la presencia de comercios en un área responde a un fenómeno de atracción mutua. Ya no diremos "creo que aquí hay una dinámica comercial", sino que podremos demostrarlo formalmente con datos duros.
+
+.
+
+Para que esta herramienta funcione, la computadora necesita que nosotros le enseñemos qué significa "ser vecinos" en una metrópoli tan gigantesca como la ZMVM. Nosotros definimos esa cercanía mediante reglas matemáticas, como establecer un radio de distancia en metros o verificar qué colonias comparten fronteras físicas. Una vez configurada esta red de vecindad, el algoritmo está listo para comparar cada unidad con su entorno.
+
+.
+
+El algoritmo toma el valor de un indicador comercial en un lugar específico —por ejemplo, el número de empleados o las ventas estimadas— y lo contrasta con el promedio de sus vecinos. Al hacer esto de forma repetida en todo el territorio, la herramienta calcula un indicador único para cada zona analizada. Esto nos permite obtener una radiografía matemática sumamente detallada de la estructura comercial de la ciudad.
+
+.
+
+Un punto crucial de `local_moran` es que no se limita a calcular un promedio, sino que mide la variabilidad del comportamiento espacial en distancias cortas. Esto es ideal para estudiar la ZMVM, ya que las dinámicas de comida in situ cambian drásticamente al cruzar una avenida principal o al pasar de un barrio residencial a uno comercial. La herramienta captura perfectamente estas fronteras y rupturas urbanas.
+
+.
+
+El verdadero poder de este análisis radica en su capacidad para separar la señal del ruido en los datos geográficos de las unidades comerciales. Muchas veces, los datos comerciales de restaurantes presentan valores atípicos o errores de registro que confunden a los analistas. El procedimiento matemático detrás de esta función ayuda a suavizar esas irregularidades, permitiendo que nos concentremos únicamente en las tendencias espaciales verdaderas.
+
+.
+
+Una ventaja del `local_moran` es aprender a automatizar la búsqueda de patrones en bases de datos masivas. Estudiar la ZMVM de forma manual o puramente visual sería una tarea imposible debido a la inmensa cantidad de registros de comida in situ que existen. Con este algoritmo, reducimos horas de inspección visual a solo unos segundos de procesamiento matemático de alta fidelidad.
+
+.
+
+Otro aspecto fundamental que revisaremos es el nivel de confianza del análisis, el cual nos asegura que los resultados no ocurrieron por mera casualidad. El software calcula un valor de probabilidad para cada punto del mapa de la ZMVM, validando si el comportamiento observado es estadísticamente significativo. Esto le da una validez científica impecable a cualquier reporte o estudio de mercado que decidan realizar en el futuro.
+
+.
+
+Finalmente, dominar el Moran Local otorga la habilidad de asesorar a empresas e inversionistas sobre dónde analizar el suelo urbano con fines comerciales. Al terminar esta sesión, sabrán cómo aplicar `local_moran` para limpiar sus mapas y destacar únicamente las zonas donde la geografía comercial muestra un comportamiento real y digno de estudio.
+
+.
+
+Cargamos nuestros datos por municipio y volvemos a calcular la densidad normalizada de unidades comerciales
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+municipios_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "municipios_zmvm"
+)
+names(municipios_zmvm) <- str_to_lower(names(municipios_zmvm))
+```
+
+```{r}
+conteo_unidades_comerciales <- municipios_zmvm %>%
+  st_join(unidades_comerciales, join = st_intersects) %>%
+  st_drop_geometry() %>% 
+  group_by(cvegeo) %>%
+  summarise(total_comercios = sum(!is.na(id)), .groups = "drop")
+
+municipios_normalizados <- municipios_zmvm %>%
+  left_join(conteo_unidades_comerciales, by = "cvegeo") %>%
+  mutate(
+    total_comercios = ifelse(is.na(total_comercios), 0, total_comercios),
+    area_m2  = st_area(.),
+    area_km2 = as.numeric(area_m2) / 1000000,
+    densidad_comercial = total_comercios / area_km2
+  )
+```
+
+.
+
+.
+
+En el módulo anterior realizamos la red de vecindad tipo Reina y el cálculo del lag espacial paso a paso, utilizando funciones individuales para entender la lógica detrás de cómo se transmite la influencia comercial entre los municipios de la ZMVM. Sin embargo, en la práctica profesional y para agilizar nuestro flujo de trabajo con grandes bases de datos, el ecosistema moderno de `sfdep` nos permite integrar todo este proceso de forma continua y automatizada en un solo bloque de código conectado por *pipes* (`%>%`).
+
+.
+
+Como pueden observar en el siguiente script, en lugar de arrastrar objetos separados, la función `st_contiguity(geometry)` genera la red Reina directamente sobre nuestra tabla original y, acto seguido, `st_weights()` calcula los pesos espaciales estandarizados por renglón. Lo maravilloso de este enfoque es que la función `local_moran()` toma de manera automática esa estructura vecinal y el lag implícito para contrastarlos contra la `densidad_comercial`, entregándonos un análisis con total rigor estadístico de forma inmediata y compacta.
+
+.
+
+Procedamos a calcular el Índice local de Moran.
+
+```{r}
+moran_local_resultados <- municipios_normalizados %>%
+  mutate(
+    nb = st_contiguity(st_geometry(.)),           
+    wt = st_weights(nb, style = "W", allow_zero = TRUE)        
+  ) %>%
+  mutate(
+    local_moran_res = local_moran(densidad_comercial, nb, wt)
+  )
+
+moran_local_limpio <- moran_local_resultados %>% 
+  unnest(local_moran_res)
+```
+
+En este bloque de código hemos automatizado por completo el proceso de análisis espacial para la Zona Metropolitana del Valle de México. Lo primero que hicimos fue utilizar la función `st_contiguity()` para crear la red de vecindad bajo el criterio tipo Reina. En este paso, la computadora examina la cartografía de la ZMVM y genera una lista detallada para cada municipio, anotando cuáles son sus vecinos directos, es decir, aquellos que comparten una línea de frontera o al menos un punto o esquina. Además, incluimos el comando `st_geometry(.)` como un seguro metodológico para que R localice correctamente la información geográfica sin importar si el nombre de la columna cambió durante los pasos anteriores.
+
+.
+
+Una vez que la computadora sabe quién es vecino de quién, el siguiente paso fue aplicar la función `st_weights()` para calcular los pesos espaciales con el estilo estandarizado por renglón. Esto significa que definimos matemáticamente qué tanta influencia tiene cada municipio vecino sobre el área de estudio; por ejemplo, si un municipio tiene cuatro vecinos, el algoritmo le asigna a cada uno un impacto equitativo del veinticinco por ciento en el entorno. En esta misma línea agregamos el argumento `allow_zero = TRUE`, el cual funciona como un salvavidas de programación que evita que nuestro script se rompa en caso de que existan municipios que no toquen a ningún otro dentro de la base de datos.
+
+.
+
+Con la red de vecinos y sus pesos completamente configurados, procedimos a ejecutar el corazón del análisis mediante la función `local_moran()`. Esta instrucción toma nuestra variable de `densidad_comercial` y, de forma interna y automatizada, calcula el lag espacial para contrastar la actividad de cada municipio contra el promedio de su entorno cercano. Al hacer esto de manera individual a lo largo de toda la metrópoli, el algoritmo evalúa la fuerza de las relaciones geográficas y genera múltiples indicadores estadísticos avanzados para cada unidad territorial.
+
+.
+
+Finalmente, debido a que la función `local_moran()` guarda todos sus resultados empaquetados dentro de una sola celda compleja, utilizamos la función `unnest()` de la librería `tidyr` para desempaquetar esa información. Esta operación expande los datos ocultos y los transforma en columnas tradicionales e independientes dentro de nuestra tabla final llamada `moran_local_limpio`. Gracias a este último paso, ahora tenemos filas y columnas perfectamente ordenadas con variables analíticas fundamentales como el índice local y el valor de probabilidad, quedando listos para iniciar la fase de filtrado y mapeo con rigor estadístico.
+
+.
+
+Ahora identificamos los municipios significativos
+
+```{r}
+#Crear una columna para identificar los municipios significativos
+moran_mapa_datos <- moran_local_limpio %>%
+  mutate(
+    # Si el p-value es menor a 0.05 es SIGNIFICATIVO, si no, NO SIGNIFICATIVO
+    significancia = ifelse(p_folded_sim < 0.05, "Significativo", "No Significativo")
+  )
+```
+
+Graficamos.
+
+```{r}
+ggplot(data = moran_mapa_datos) +
+  # Dibujamos todos los municipios de fondo con un color gris claro
+  geom_sf(aes(fill = significancia), color = "white", size = 0.2) +
+  # Personalizamos los colores del mapa
+  scale_fill_manual(
+    values = c("Significativo" = "#e74c3c", "No Significativo" = "#ecf0f1"),
+    name = "Rigor Estadístico\n(p < 0.05)"
+  ) +
+  # Añadimos títulos y etiquetas profesionales
+  labs(
+    title = "Municipios con Autocorrelación Espacial Significativa",
+    subtitle = "Densidad Comercial de Alimentos in situ en la ZMVM (Moran Local)",
+    caption = "Fuente: Taller de Análisis Espacial / Datos de Unidades Comerciales"
+  ) +
+  # Aplicamos un tema limpio ideal para mapas
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    panel.grid = element_blank(), # Quita las líneas de coordenadas de fondo
+    axis.text = element_blank()   # Quita los números de latitud y longitud para limpiar la vista
+  )
+```
+
+**🌟 El significado de los colores**
+
+-   **Las zonas en Gris Claro (No Significativo):** Representan la mayor parte de la metrópoli. En estos municipios, la presencia de locales de comida *in situ* se distribuye de una forma normal o aleatoria. No hay un patrón estadístico que nos llame la atención; los restaurantes están ahí simplemente porque la ciudad es grande, pero no forman agrupamientos inusuales bajo los ojos del algoritmo.
+
+-   **Las zonas en Rojo (Significativo):** El algoritmo `local_moran` ha encendido estas alarmas visuales. Nos está diciendo: *"¡Atención! En estos lugares específicos está ocurriendo un fenómeno espacial real que no es obra de la casualidad"*. Hay un rigor estadístico del 95% de confianza que confirma que estos municipios tienen un comportamiento comercial muy fuerte y conectado con sus vecinos.
+
+**🗺️ ¿Qué nos dice la geografía de la ZMVM en este mapa?**
+
+Si observamos detalladamente, los puntos rojos nos muestran que la dinámica de la comida in situ no está dispersa por cualquier lado, sino concentrada en **cuatro grandes núcleos o regiones clave**:
+
+1.  **El Núcleo Central:** Justo en el corazón de la ciudad (donde se encuentran alcaldías centrales y muy activas), vemos un agrupamiento sólido. Es lógico: aquí se concentra una inmensa cantidad de oficinas, turismo y comercio diario que demanda alimentos listos para consumir.
+
+2.  **El Núcleo Noroccidental y el Oriental:** Al norte y hacia el oriente de la zona metropolitana, se encienden otros municipios. Esto nos habla de corredores comerciales periféricos o zonas de alta densidad poblacional donde los comercios de comida han encontrado un mercado vecinal sumamente fuerte.
+
+3.  **El Núcleo Suroriental:** En la esquina inferior derecha del mapa, se consolida otro grupo muy unido de municipios con un comportamiento espacialmente relevante.
+
+.
+
+Actualmente solo sabemos que los municipios rojos *se parecen* a sus vecinos, pero no sabemos si se parecen en lo alto o en lo bajo. Por ello, en la parte siguiente, utilizaremos los **Cuadrantes LISA** para ponerle apellido a estas zonas rojas y descubrir cuáles de ellas son verdaderos *Hotspots* (núcleos comerciales saturados) y cuáles son *Coldspots* (desiertos comerciales que necesitan inversión).
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Cuadrantes LISA
+
+.
+
+Ahora sabemos con total certeza matemática qué municipios tienen un comportamiento espacial importante. Sin embargo, el mapa actual nos deja con una gran incógnita: solo nos dice *dónde* ocurre algo interesante, pero no nos dice *qué* está pasando exactamente. Para resolver este misterio, la estadística espacial utiliza una herramienta complementaria llamada cuadrantes LISA, las cuales actúan como etiquetas específicas que le ponen nombre y apellido a cada una de esas zonas significativas que descubrimos.
+
+.
+
+La magia de los cuadrantes LISA consiste en cruzar dos datos que ustedes ya conocen a la perfección: el valor real de la densidad comercial de un municipio y el valor de su lag espacial, es decir, el promedio de su entorno vecinal. Al contrastar estas dos fuerzas, el algoritmo divide el territorio en cuatro categorías o cuadrantes basándose en si los valores están por encima o por debajo de la media general de la metrópoli. Este cruce de datos nos permite clasificar los municipios en zonas de alta concentración, desiertos comerciales o anomalías urbanas que rompen con la regla de su entorno.
+
+.
+
+El primer cuadrante es el denominado **Alto-Alto** o también conocido popularmente en el mundo de los negocios como zona caliente (*hotspot*). Esta etiqueta se le asigna a los municipios que tienen una densidad comercial de comida in situ muy elevada y que, además, están rodeados por vecinos que también presentan números muy altos. En nuestra zona de estudio, el núcleo central de la ZMVM suele caer en esta categoría, reflejando corredores gastronómicos masivos y consolidados donde la competencia es feroz pero el mercado es sumamente vibrante y atractivo para los inversionistas.
+
+.
+
+El segundo cuadrante es el opuesto directo y se llama **Bajo-Bajo** o zona fría (*coldspot*). Aquí encontramos municipios donde la presencia de restaurantes es sumamente escasa y cuyos vecinos a la redonda se encuentran exactamente en la misma situación de baja actividad. Identificar estas zonas frías en la periferia de la ZMVM es de vital importancia para el análisis social y de planeación urbana, ya que nos revela de forma científica la existencia de desiertos alimentarios o sectores donde la población carece de opciones cercanas para consumir alimentos.
+
+.
+
+Los dos cuadrantes restantes son los más fascinantes de analizar porque representan rarezas geográficas, es decir, lugares que deciden no imitar el comportamiento de su entorno. El tercer cuadrante se conoce como **Alto-Bajo** y clasifica a aquellos municipios que tienen una altísima densidad comercial, pero están rodeados por vecinos con valores muy bajos. Imaginen esto como un oasis comercial en la ZMVM; un municipio que brilla por su enorme oferta de comida in situ a pesar de encontrarse en medio de una periferia puramente residencial o industrial que no ofrece nada.
+
+.
+
+Por el contrario, el cuarto cuadrante se denomina **Bajo-Alto** y representa a municipios que tienen una actividad comercial muy baja a pesar de estar rodeados por vecinos que están completamente saturados de restaurantes. En el contexto de nuestra metrópoli, este escenario suele ocurrir en municipios atrapados estratégicamente junto a grandes corredores comerciales, funcionando como zonas de rezago que no han sabido aprovechar la inmensa sinergia económica de su entorno. Para un analista, este cuadrante representa una oportunidad de oro o una clara advertencia de que existen barreras urbanas impidiendo el desarrollo del lugar.
+
+.
+
+Es fundamental recalcar que, aunque el análisis calcula estas cuatro etiquetas para absolutamente todos los municipios del mapa, nosotros solo les prestaremos atención a las zonas que previamente resultaron estadísticamente significativas. Esto significa que si un municipio cae en el cuadrante Alto-Alto pero su valor de probabilidad no pasó el filtro del taller anterior, lo ignoraremos por completo y lo pintaremos de gris. De esta manera, garantizamos que nuestras conclusiones comerciales estén firmemente respaldadas por las matemáticas y no por meras casualidades del territorio.
+
+.
+
+Al dominar la lógica de estos cuatro cuadrantes, ustedes pasarán de ser simples visualizadores de mapas a convertirse en estrategas de localización capaces de descifrar la estructura económica de cualquier ciudad. A continuacion, modificaremos el código de R para asignarle a nuestro mapa los colores universales de la metodología LISA: rojo para las zonas calientes, azul para las zonas frías, y tonos pastel para las anomalías espaciales.
+
+```{r}
+# 1. Clasificación de Cuadrantes LISA basados en la media
+moran_lisa_clasificado <- moran_local_limpio %>%
+  mutate(
+    # Centramos la densidad comercial respecto a su media general
+    densidad_centrada = densidad_comercial - mean(densidad_comercial, na.rm = TRUE),
+    # sfdep calcula el lag espacial internamente, pero podemos extraerlo de la estructura:
+    # Si la densidad centrada y el lag son > 0 -> Alto-Alto, etc.
+    # Alternativamente, sfdep ya nos entrega un vector de cuadrantes llamado 'p_quadrancy' (factor de 1 a 4)
+    # Vamos a mapear de forma segura usando la variable centrada y el valor esperado:
+    
+    cuadrante = case_when(
+      p_folded_sim >= 0.05 ~ "No Significativo",
+      densidad_centrada > 0 & (ii > 0) ~ "Alto-Alto (Hotspot)",
+      densidad_centrada < 0 & (ii > 0) ~ "Bajo-Bajo (Coldspot)",
+      densidad_centrada > 0 & (ii < 0) ~ "Alto-Bajo (Oasis)",
+      densidad_centrada < 0 & (ii < 0) ~ "Bajo-Alto (Rezago)",
+      TRUE ~ "No Significativo"
+    )
+  )
+```
+
+```{r}
+mapa_LISA <- ggplot(data = moran_lisa_clasificado) +
+  # Dibujamos los polígonos pintándolos según su cuadrante LISA
+  geom_sf(aes(fill = cuadrante), color = "white", size = 0.2) +
+  # Aplicamos la paleta de colores internacional estándar para mapas LISA
+  scale_fill_manual(
+    values = c(
+      "Alto-Alto (Hotspot)"  = "#e74c3c", # Rojo
+      "Bajo-Bajo (Coldspot)" = "#3498db", # Azul
+      "Alto-Bajo (Oasis)"    = "#e67e22", # Naranja / Rosa pastel
+      "Bajo-Alto (Rezago)"   = "#9b59b6", # Morado / Celeste pastel
+      "No Significativo"     = "#ecf0f1"  # Gris Claro
+    ),
+    name = "Cuadrantes LISA"
+  ) +
+  # Títulos institucionales y descriptivos
+  labs(
+    title = "Mapa de Autocorrelación Espacial Local (LISA)",
+    subtitle = "Análisis de Clusters de la Densidad Comercial de Alimentos in situ (ZMVM)",
+    caption = "Fuente: Taller de Análisis Espacial Avanzado / Nivel de confianza: 95% (p < 0.05)"
+  ) +
+  # Limpieza visual del mapa
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11, color = "gray30"),
+    panel.grid = element_blank(),
+    
+  )
+```
+
+```{r}
+print(mapa_LISA)
+```
+
+**🔴 El Corazón de la Metrópoli: Alto-Alto (Hotspot)**
+
+La zona que ven pintada de **rojo** en el centro de la ZMVM corresponde al cuadrante **Alto-Alto**.
+
+-   **¿Qué significa?**: Significa que estas alcaldías centrales tienen una **densidad altísima** de comercios de comida *in situ* (muchos restaurantes por kilómetro cuadrado) y, además, están completamente rodeadas por vecinas que también tienen densidades sumamente altas.
+
+-   **Lectura comercial**: Este es el gran *corredor gastronómico y de servicios* de la metrópoli (donde se ubican zonas hiperactivas como Cuauhtémoc, Benito Juárez o Miguel Hidalgo). Para un inversionista, entrar aquí significa llegar a un mercado consolidado con un flujo masivo de consumidores cotidianos, aunque la competencia sea feroz.
+
+**🔵 Las Periferias: Bajo-Bajo (Coldspot)**
+
+Las tres grandes regiones que ven pintadas de **azul** al norte, al oriente y al suroriente corresponden al cuadrante **Bajo-Bajo**.
+
+-   **¿Qué significa?**: Estos municipios tienen una **densidad comercial baja** de alimentos listos para consumir y, al mismo tiempo, sus vecinos colindantes comparten esa misma escasez.
+
+-   **Lectura comercial y social**: En análisis urbano, a esto le llamamos **desiertos comerciales** o zonas de baja cobertura. Al alejarnos del centro geográfico hacia municipios periféricos (como los que colindan con el Estado de México o las zonas rurales del sur), la dinámica económica cambia. Aquí la población tiene que trasladarse distancias más largas para encontrar un restaurante formal para comer *in situ*. Para una cadena de comida en expansión, estas zonas representan mercados insatisfechos y una oportunidad de oro si se estudia bien la demanda local.
+
+**⚪ El Resto del Territorio: No Significativo**
+
+Todo lo que quedó en **gris claro** se mantiene como estadísticamente no significativo. En estos municipios, la densidad de restaurantes no genera agrupamientos extremos; se distribuyen de manera normal y difusa según el tamaño de su propia población, sin influir ni ser influenciados fuertemente por sus vecinos en este rubro específico.
+
+.
+
+::: callout-note
+**💡 ¿Cuál es la diferencia? Lag Espacial vs. Índice de Moran Local (LISA)**
+
+Aunque ambos conceptos trabajan con la red de vecindad tipo Reina en la ZMVM, cumplen funciones totalmente distintas en tu análisis:
+
+-   **El Lag Espacial es una FOTO del entorno:** Te dice el promedio de densidad comercial que tiene un municipio a su alrededor. Si te paras en Ecatepec, el lag espacial simplemente calcula cuántos restaurantes tienen sus vecinos en promedio. Es una variable descriptiva (un dato más en tu tabla).
+
+-   **El Moran Local (LISA) es un JUEZ estadístico:** No se limita a promediar; toma la densidad de tu municipio, la contrasta contra el lag espacial (su entorno) y **determina si esa relación es matemáticamente real o pura casualidad**. Además, te arroja un *p-value* para darte el rigor científico que valida si estás ante un verdadero *Hotspot* o un *Coldspot*.
+:::
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Control geométrico para la exportación de imágenes
+
+.
+
+Cuando trabajamos con análisis espacial, el diseño de nuestros mapas va mucho más allá de elegir colores bonitos o títulos atractivos; existe un componente técnico crítico llamado control geométrico. Al renderizar un mapa en la pantalla o al exportar nuestro lienzo a un archivo de imagen, la computadora tiende a ajustar los límites del gráfico para que quepan de forma exacta en el espacio disponible. Si no tomamos el control de este proceso, R estirará o aplastará nuestro mapa de manera indiscriminada para rellenar los pixeles de la ventana, alterando por completo las proporciones reales del territorio.
+
+.
+
+Para evitar esta catástrofe visual en nuestro taller de la ZMVM, la herramienta matemática indispensable dentro de `ggplot2` es la función `coord_sf()`. Lo que hace este comando de manera interna es congelar y fijar estrictamente la relación de aspecto espacial, asegurando que un metro medido verticalmente en el mapa equivalga exactamente a un metro medido de forma horizontal. Al añadir esta línea a nuestro script, le quitamos a R el poder de decidir las dimensiones estéticas y obligamos al software a respetar fielmente las coordenadas geográficas de los municipios.
+
+.
+
+Si omitiéramos el uso de `coord_sf()`, correríamos el grave riesgo de presentar un mapa distorsionado donde el Valle de México luciría artificialmente alargado hacia los polos o achatado hacia los lados. Para un analista comercial, este es un error metodológico imperdonable, ya que las distancias visuales entre los *hotspots* del centro y los *coldspots* de la periferia se percibirían alteradas. Al distorsionar la geometría de la cuenca de México, estaríamos engañando inconscientemente al ojo de los tomadores de decisiones sobre la verdadera cercanía o conectividad de los mercados de comida in situ.
+
+.
+
+El verdadero reto para ustedes como estudiantes surge al momento de guardar el mapa final mediante funciones de exportación como `ggsave()`. Cuando especificamos el ancho y el alto de una imagen en pulgadas o centímetros, estamos definiendo un marco externo que rara vez coincide a la perfección con la silueta geográfica de nuestra zona de estudio. Gracias a que previamente declaramos `coord_sf()`, el mapa mantendrá sus proporciones intactas dentro de ese marco, generando elegantes márgenes blancos en los costados sobrantes en lugar de deformar el contorno de la metrópoli.
+
+.
+
+```{r}
+mapa_lisa_final <- ggplot(data = moran_lisa_clasificado) +
+  # Dibujar los polígonos municipales asignando el cuadrante correspondiente
+  geom_sf(aes(fill = cuadrante), color = "white", size = 0.2) +
+  
+  # CRÍTICO: Control geométrico para congelar la relación de aspecto espacial
+  # Evita que el mapa de la ZMVM se estire o achate al cambiar el tamaño de ventana
+  coord_sf(datum = st_crs(moran_lisa_clasificado), expand = FALSE) +
+  
+  # Aplicar la paleta de colores internacional estándar para LISA
+  scale_fill_manual(
+    values = c(
+      "Alto-Alto (Hotspot)"  = "#e74c3c", # Rojo
+      "Bajo-Bajo (Coldspot)" = "#3498db", # Azul
+      "Alto-Bajo (Oasis)"    = "#e67e22", # Naranja
+      "Bajo-Alto (Rezago)"   = "#9b59b6", # Morado
+      "No Significativo"     = "#ecf0f1"  # Gris Claro
+    ),
+    name = "Cuadrantes LISA"
+  ) +
+  # Títulos y metadatos del proyecto
+  labs(
+    title = "Mapa de Autocorrelación Espacial Local (LISA)",
+    subtitle = "Análisis de Clusters de la Densidad Comercial de Alimentos in situ (ZMVM)",
+    caption = "Fuente: Taller de Análisis Espacial Avanzado / Nivel de confianza: 95% (p < 0.05)"
+  ) +
+  # Estética y limpieza visual del fondo cartográfico
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14, hjust = 0),
+    plot.subtitle = element_text(size = 11, color = "gray30", hjust = 0),
+
+    legend.position = "right",
+    legend.title = element_text(face = "bold")
+  )
+```
+
+```{r}
+print(mapa_lisa_final)
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Exportación de gráfico
+
+.
+
+El paso final y más crucial de nuestro flujo de trabajo técnico es la exportación del mapa desde el entorno de RStudio hacia un archivo de imagen independiente. Para lograr esto de manera profesional, utilizamos la función `ggsave()`, la cual actúa como una cámara fotográfica digital que captura nuestro lienzo de `ggplot2` y lo guarda en el disco duro. Al exportar, no podemos dejar los parámetros al azar; debemos especificar de forma manual el nombre del archivo de salida junto con su extensión, que para este tipo de mapas temáticos idealmente debe ser en formato `.png` para conservar la nitidez de las líneas municipales de la ZMVM sin sufrir pérdidas por compresión.
+
+.
+
+Uno de los mayores errores al exportar mapas es confiar en que la computadora adivinará el tamaño de salida correcto, lo que suele resultar en textos gigantescos o leyendas encimadas. Para mitigar este problema, en nuestro script definimos las dimensiones exactas de la imagen utilizando los argumentos de ancho (`width = 8`) y alto (`height = 7`) medidos en pulgadas. Al fijar un tamaño de lienzo estándar y acotado, obligamos a todos los elementos del mapa —como los títulos, los cuadros de leyenda y las etiquetas de los cuadrantes LISA— a mantener una proporción armónica y equilibrada, garantizando que el diseño sea perfectamente legible.
+
+.
+
+Otro parámetro técnico indispensable que configuramos en la exportación es la resolución de la imagen a través del argumento `dpi` (puntos por pulgada, por sus siglas en inglés). Para un reporte escolar o una entrega ejecutiva rápida, una resolución estándar de 72 o 150 DPI podría ser suficiente para visualizarse en pantalla, pero para este taller profesional elevamos el estándar a `dpi = 300`. Configurar este valor en trescientos puntos por pulgada asegura una calidad de impresión editorial de alta fidelidad, permitiendo que si alguien decide hacer un acercamiento (*zoom*) digital a los municipios rojos del centro o a las periferias azules, los bordes vectoriales se mantengan completamente nítidos y libres de pixeleado.
+
+.
+
+Finalmente, introdujimos el argumento de fondo `bg = "white"` como una medida de seguridad imprescindible en la programación cartográfica. Por defecto, cuando R exporta un gráfico temático con `theme_minimal()`, tiende a dejar el fondo del lienzo de manera transparente. Si insertáramos esa imagen con fondo transparente dentro de una presentación de diapositivas oscura o en un reporte impreso, los títulos negros y los municipios gris claro del mapa de la ZMVM se volverían invisibles o ilegibles; al forzar un fondo blanco sólido, blindamos nuestro archivo contra cualquier imprevisto estético y aseguramos que el contraste de los cuadrantes LISA resalte con total claridad.
+
+.
+
+```{r}
+# Usamos dimensiones calculadas para la silueta vertical/cuadrada de la ZMVM (Relación aprox 4:3)
+ggsave(
+  filename = here("mapa_lisa_zmvm.png"), # Nombre del archivo de salida
+  plot = mapa_lisa_final,          # Objeto que contiene el mapa
+  width = 8,                       # Ancho de la imagen en pulgadas
+  height = 7,                      # Alto de la imagen en pulgadas
+  dpi = 300,                       # Alta resolución ideal para reportes y Quarto PDF
+  bg = "white"                     # Fondo blanco para evitar transparencias accidentadas
+)
+```
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+Muchas gracias por completar el cuarto y último módulo del taller.

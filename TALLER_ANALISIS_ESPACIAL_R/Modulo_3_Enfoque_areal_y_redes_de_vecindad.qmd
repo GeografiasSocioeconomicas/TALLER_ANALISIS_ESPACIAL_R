@@ -1,0 +1,797 @@
+---
+title: "Módulo 3: Enfoque Areal y Redes de Vecindad"
+format:
+  html:
+    embed-resources: true
+    toc: true
+    toc-location: right
+    font-size: 1.5rem
+editor: visual
+---
+
+Recordemos que estamos estructurando nuestro proyecto mediante módulos independientes. Es indispensable incluir este bloque de configuración inicial en la parte superior de cada nuevo archivo \`.qmd\` que creemos. Por ello, volver a cargar las librerías base (como \`dplyr o \`sf\`) y definir los parámetros de visualización al inicio de cada módulo no es repetitivo, sino una regla de oro técnica para asegurar que el documento se compile de manera correcta y autónoma en cualquier computadora.
+
+```{r}
+if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
+```
+
+```{r}
+# Con la función p_load() se cargan de manera automática todas las librerías requeridas
+pacman::p_load(
+  # --- Datos y mapas espaciales (GIS) ---
+  sf,                 # Manejo de datos vectoriales geográficos
+  spdep,               # Redes de vecindad y dependencia espacial
+  
+  # --- Visualización base y mapas ---
+  ggplot2,            # Sistema de gráficos principal
+  ggspatial,          # Flechas de norte, escalas gráficas, etc.
+  
+  # --- Estética, colores y escalas ---
+  viridis,            # Paletas de colores accesibles y legibles
+  colorspace,         # Modificación y ajuste fino de colores
+  
+  # --- Diseño avanzado de gráficos ---
+  lemon,              # Ejes repetidos y mejoras estéticas
+  gridExtra,          # Combinación de múltiples gráficos en uno
+  ggrepel,            # Etiquetas de texto que no se enciman
+  
+  # --- Manipulación de datos ---
+  dplyr,              # Limpieza y transformación de tablas
+  stringr,            # Limpieza y manipulación de textos
+  classInt,           # Intervalos y rangos de datos
+  
+  # --- Gestión de proyectos e Importación ---
+  here,               # Gestión de rutas de archivos
+  foreign            # Lectura de datos de SPSS, Stata o SAS
+)
+```
+
+```{r}
+# Parámetros para ocultar mensajes de carga innecesarios
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = TRUE)
+# Configuraciones para los datos y resultados decimales
+options(
+  scipen = 999,                 # Desactiva notación científica
+  OutDec = "."                  # Uniformidad en punto decimal
+)
+```
+
+Ahora podemos entrar en materia.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Agregación territorial
+
+.
+
+El **Enfoque Areal** es una rama del análisis espacial que estudia cómo se distribuyen los fenómenos dentro de zonas con límites bien definidos. En el sector de los servicios de consumo alimentario, no nos basta con saber que un restaurante existe; necesitamos entender el vecindario donde opera. Este enfoque nos permite agrupar negocios individuales para analizar el comportamiento completo de un barrio, una colonia, ageb o un municipio. Es el equivalente a mirar el mapa con binoculares para ver el panorama generalizado de los territorios en vez de mirar cada unidad comerciales con una lupa.
+
+.
+
+El **Enfoque Areal** dririge un cambio de escala analítica que transforma variables discretas (puntos en el espacio) en variables continuas agregadas (propiedades de un territorio).
+
+.
+
+Cuando hablamos de **Agregación Territorial**, nos referimos al proceso de recolectar y sumar esos puntos comerciales dentro de un territorio específico. Imaginen que dejamos caer cientos de alfileres sobre un mapa y luego contamos cuántos cayeron dentro de cada frontera. Al hacer esto con los restaurantes o cafeterías, transformamos miles de coordenadas aisladas en un dato único y valioso por zona, revelando de inmediato qué sectores tienen sobreoferta y cuáles están desatendidos.
+
+.
+
+Para lograr esto de forma eficiente, utilizaremos el **Conteo Automatizado** en R. En lugar de revisar visualmente la pantalla y contar manualmente cada negocio —lo cual nos tomaría días y nos expondría a muchos errores—, programaremos a la computadora para que lo haga por nosotros en segundos. R procesará bases de datos enormes de manera simultánea, sumará los comercios correspondientes a cada área y nos entregará una tabla limpia con los totales listos para trabajar.
+
+.
+
+En este taller trabajaremos con unidades de análisis clave: los **AGEB y Municipios**. Los municipios nos ofrecen una visión macro, ideal para entender la dinámica económica general de una región o para la distribución a gran escala. Por su parte, las Áreas Geoestadísticas Básicas (AGEB) nos brindan una escala microurbana muy detallada. Analizar los negocios a nivel AGEB es el equivalente a estudiar la vida comercial a ras de suelo, justo a la escala de un barrio o comunidad.
+
+.
+
+La herramienta técnica que hará posible esta magia se conoce como **Cruces Espaciales** o *spatial joins*. Piensen en esto como un molde de galletas tridimensional: tomamos la capa geográfica de nuestros puntos comerciales y la presionamos contra la capa de los polígonos de la ciudad. R calculará matemáticamente qué coordenadas "viven" dentro de qué límites territoriales y fusionará la información de ambas bases de datos de forma automática.
+
+.
+
+El estudio del **Consumo Alimentario In Situ** cobra un sentido estratégico único mediante este método. Los establecimientos donde los clientes asisten a comer —como restaurantes, fondas o cocinas económicas— dependen por completo de su entorno inmediato y del flujo peatonal. Al agregar estos comercios por áreas, podremos descubrir "clústeres" o zonas de alta concentración gastronómica, mapear la competencia real y predecir dónde se generan las mejores oportunidades de mercado.
+
+.
+
+Para ejecutar todo esto, utilizaremos **R como Plataforma de Análisis**, una de las herramientas más potentes del mundo para la ciencia de datos. A través del paquete `sf` (Simple Features), descubriremos que manejar mapas y geometrías es estructurado e intuitivo. R no solo nos ahorrará el costo de licencias de software privado, sino que nos dará el control total sobre la manipulación y limpieza de nuestra información geográfica.
+
+.
+
+El objetivo de este ejercicio es transformar los **Datos Crudos en Indicadores**. Al final de la práctica, verán cómo una lista plana de nombres de restaurantes y coordenadas se convierte en un mapa de calor o un indicador de densidad comercial. Estos resultados son el núcleo de la inteligencia de negocios moderna, permitiéndonos asesorar a inversionistas, franquicias o planificadores urbanos sobre dónde abrir un nuevo local con el menor riesgo posible.
+
+.
+
+Durante la sesión, aprenderemos a mantener la **Integración y Calidad del Dato Espacial**. R nos enseñará a detectar problemas comunes, como coordenadas mal ubicadas en el mar o comercios fuera de sus límites municipales, y a corregirlos mediante código. Desarrollar este ojo crítico es fundamental, ya que una base de datos limpia es la única garantía de que nuestras conclusiones comerciales reflejen la realidad del mercado en las calles.
+
+.
+
+.
+
+Carguemos nuestros datos de unidades comerciales de la zona metropolitana
+
+```{r}
+unidades_comerciales <- st_read(
+  here("BASES_DE_DATOS", "comercios_LCC.gpkg"), 
+  layer = "unidades_comerciales"
+)
+```
+
+.
+
+Revisamos los nombres de las variables:
+
+```{r}
+names(unidades_comerciales)
+```
+
+Como hemos visto, los nombres de las columnas del objeto `sf` ya están en minúsculas, por lo que no hay que hacerles ninguna limpieza de formato previa. Podemos pasar directamente a trabajar con ellas en el código utilizando sus nombres tal cual aparecen.
+
+.
+
+.
+
+Ahora cargaremos la base cartográfica de los municipios de la zona metropolitana del Valle de Mexico
+
+```{r}
+municipios_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "municipios_zmvm"
+)
+```
+
+.
+
+Revisamos los nombres de las variables:
+
+```{r}
+names(municipios_zmvm)
+```
+
+Este objeto sf presenta nombres en mayusculas, por lo cual se recomienda cambiar a minusculas
+
+```{r}
+names(municipios_zmvm) <- str_to_lower(names(municipios_zmvm))
+```
+
+Comprobamos el cambio
+
+```{r}
+names(municipios_zmvm)
+```
+
+Revisamos en general que contiene este objector
+
+```{r}
+glimpse(municipios_zmvm)
+```
+
+Asociamos a cada restaurante el nombre del municipio donde cae geográficamente.
+
+```{r}
+comercios_por_municipio <- st_join(unidades_comerciales, municipios_zmvm[,c(1,5)], join = st_intersects)
+```
+
+```{r}
+print("Resultado del cruce espacial:")
+print(comercios_por_municipio)
+```
+
+```{r}
+# Grafico
+ggplot() +
+  # Capa 1: Polígonos de los municipios
+  geom_sf(data = municipios_zmvm, fill = "lightblue", alpha = 0.5, color = "gray50") +
+  
+  # Capa 2: Puntos de los comercios (usando el objeto correcto del paso 4)
+  geom_sf(data = comercios_por_municipio, aes(color = cvegeo), size = 4) +
+  
+  # Estética y etiquetas
+  theme_minimal() +
+  labs(
+    title = "Control Espacial: Unidades de Alimento en la ZMVM",
+    subtitle = "Verificación de puntos dentro del polígono municipal",
+    color = "Establecimiento"
+  )
+```
+
+.
+
+Contamos cuántos restaurantes cayeron dentro de cada municipio de nuestra capa:
+
+```{r}
+conteo_unidades_comerciales <- municipios_zmvm %>%
+  st_join(unidades_comerciales, join = st_intersects) %>%
+  group_by(cvegeo) %>%
+  summarise(total_comercios = sum(!is.na(id)), .groups = "drop")
+
+```
+
+```{r}
+print("Tabla final con la agregación territorial:")
+print(conteo_unidades_comerciales)
+```
+
+```{r}
+# Grafico agregado
+ggplot(data = conteo_unidades_comerciales) +
+  # Pintamos los polígonos basados en el conteo automatizado
+  geom_sf(aes(fill = total_comercios), color = "white", size = 0.2) +
+  
+  # Paleta de colores atractiva y legible (Viridis es excelente para esto)
+ scale_fill_viridis_c(
+  option = "magma", 
+  direction = -1,  # Invierte el orden de los colores
+  name = "Total de\nComercios"
+)+
+  
+  # Diseño limpio para mapas
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40"),
+    legend.position = "right"
+  ) +
+  
+  # Etiquetas informativas
+  labs(
+    title = "Cantidad Comercial de Consumo Alimentario",
+    subtitle = "Agregación y conteo automatizado por clave geográfica (CVEGEO)",
+    caption = "Fuente: Taller de Análisis Espacial en R"
+  )
+```
+
+**1. Patrón Espacial Centro-Periferia**
+
+-   **Núcleo de Alta Densidad**: El mapa revela una clarísima concentración centralizada del consumo alimentario. Las zonas en color negro y morado oscuro (que superan los 4,000 y 6,000 establecimientos) representan el corazón comercial y demográfico de la Zona Metropolitana (como las alcaldías centrales de la CDMX y los municipios conurbados más densamente poblados).
+
+-   **Dispersión Periférica**: Conforme el análisis se desplaza hacia los límites exteriores (norte, este y sur profundo), los colores transicionan rápidamente hacia naranjas claros y amarillos. Estas áreas registran menos de 2,000 comercios, lo que refleja zonas predominantemente residenciales, industriales o de suelo de conservación con baja densidad comercial.
+
+**2. Identificación de "Clústeres" Gastronómicos**
+
+-   El algoritmo de agregación territorial permite identificar visualmente la formación de **conglomerados comerciales** continuos. El bloque oscuro central no es un polígono aislado; forma un corredor continuo de alta actividad económica donde el consumo de alimentos *in situ* se beneficia de las economías de aglomeración (alta afluencia peatonal, oficinas y conectividad vial).
+
+**3. Utilidad para la Toma de Decisiones (Inteligencia de Negocios)**
+
+-   **Zonas de Alta Competencia (Saturación)**: Los polígonos oscuros alertan sobre mercados altamente competitivos. Un nuevo negocio de alimentos aquí se enfrentará a una rivalidad severa, requiriendo una fuerte diferenciación.
+
+-   **Oportunidades de Mercado**: Las zonas de transición (tonos rojizos y naranjas intermedios) pueden representar nichos atractivos donde ya existe cierta infraestructura comercial pero el mercado aún no está completamente saturado.
+
+.
+
+.
+
+Ahora carguemos la base de las ageb urbanas.
+
+```{r}
+ageb_urbanas_zmvm <- st_read(
+  here("BASES_DE_DATOS", "datos_espaciales.gpkg"), 
+  layer = "ageb_urbanas_zmvm"
+)
+```
+
+Revisamos los nombres de las variables:
+
+```{r}
+names(ageb_urbanas_zmvm)
+```
+
+Cambiamos a minusculas
+
+```{r}
+names(ageb_urbanas_zmvm) <- str_to_lower(names(ageb_urbanas_zmvm))
+```
+
+Revisamos en general que contiene este objector
+
+```{r}
+glimpse(ageb_urbanas_zmvm)
+```
+
+Contamos cuántos restaurantes cayeron dentro de cada ageb urbana de nuestra capa:
+
+```{r}
+conteo_por_ageb <- ageb_urbanas_zmvm %>%
+  st_join(unidades_comerciales, join = st_intersects) %>%
+  group_by(cvegeo) %>%
+  summarise(total_comercios = sum(!is.na(id)), .groups = "drop")
+```
+
+Hacemos el mapa para visualizar la informacion de manera grafica
+
+```{r}
+ggplot(data = conteo_por_ageb) + # <- Cambiado al objeto de AGEB
+  # Pintamos los polígonos de AGEB sin bordes para evitar la saturación visual
+  geom_sf(aes(fill = total_comercios), color = NA) + 
+  
+  # Paleta invertida solicitada
+  scale_fill_viridis_c(
+    option = "magma", 
+    direction = -1,  
+    name = "Total de\nComercios"
+  ) +
+  
+  # Diseño optimizado para alta densidad de polígonos
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40", size = 10),
+    legend.position = "right",
+    # Eliminamos las líneas de cuadrícula del fondo para enfocar la atención en los AGEB
+    panel.grid = element_blank() 
+  ) +
+  
+  # Etiquetas adaptadas al análisis microurbano
+  labs(
+    title = "Cantidad Comercial de Consumo Alimentario (Nivel AGEB)",
+    subtitle = "Análisis microurbano y agregación espacial en la ZMVM",
+    caption = "Fuente: Taller de Análisis Espacial en R | Datos: AGEB Urbanas"
+  )
+```
+
+**1. De la Homogeneidad a la Heterogeneidad Microurbana**
+
+-   **El efecto de la escala**: Al pasar del nivel municipal al nivel AGEB, el panorama cambia por completo. Zonas que antes se veían uniformemente oscuras (saturadas) en el mapa municipal ahora revelan otra estructura espacial: un tejido mayoritariamente claro (de 0 a 100 comercios) salpicado por **"puntos calientes" o micro-clústeres muy específicos**.
+
+-   **Segmentación del espacio**: Esto nos acerca al concepto de *falacia ecológica*: asumir que todo un municipio es homogéneo es un error. Dentro de un municipio catalogado como "comercial", coexisten AGEBs puramente residenciales con pequeños núcleos hiper-comerciales.
+
+**2. Identificación de Corredores y Nodos Gastronómicos**
+
+-   **Puntos negros e hiper-concentrados**: Los escasos polígonos que alcanzan o superan los 300 comercios (tonos negros y morados intensos) representan nodos urbanos críticos. Suelen coincidir con centros históricos delegacionales/municipales, zonas de oficinas de alta densidad, o grandes corredores comerciales y de servicios.
+
+-   **Vacíos comerciales internos**: El gran espacio en blanco central y las ramificaciones claras muestran zonas donde el consumo de alimentos *in situ* es casi nulo, lo cual suele corresponder a infraestructura industrial, zonas militares, parques urbanos (como Chapultepec o aeropuertos) o áreas de nivel socioeconómico con dinámicas distintas.
+
+**3. Aplicación Práctica en Inteligencia de Mercado (Geomarketing)**
+
+-   **Precisión de localización (Site Selection)**: Para un inversionista, este mapa es infinitamente más útil que el municipal. En lugar de decidir "abrir un restaurante en Naucalpan", el mapa orienta la decisión hacia el AGEB exacto que funciona como imán comercial del flujo peatonal.
+
+-   **Análisis de proximidad**: Se Abre la puerta de forma perfecta para el analisis de **Redes de Vecindad**. Aquí se puede ver la necesidad de evaluar si un AGEB con cero comercios pero rodeado de AGEBs con alta densidad comparte o no el potencial de mercado.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Normalización cartográfica
+
+.
+
+Hasta este momento, hemos estado contando el número total de restaurantes y cafeterías dentro de cada municipio o AGEB, lo cual se conoce como "densidad comercial absoluta". Sin embargo, comparar totales directos entre un municipio gigantesco y uno muy pequeñito puede llevarnos a conclusiones completamente falsas. Normalizar nuestros datos significa poner a todas las regiones bajo la misma regla de medir, asegurando que nuestra comparación sea justa, precisa y metodológicamente correcta. Diseñar mapas sin normalizar es uno de los errores más comunes en el mundo profesional y suele invalidar análisis urbanos completos.
+
+.
+
+Para entender por qué esto es tan importante, pensemos en el efecto del tamaño de los territorios, un sesgo muy común en la geografía. Si un municipio muy grande tiene 500 restaurantes distribuidos en un territorio enorme, visualmente podría parecer un gran centro comercial en nuestras tablas. Pero si un AGEB diminuto tiene esos mismos 500 restaurantes concentrados en apenas unas cuantas calles, la realidad de ese barrio es radicalmente distinta. Al calcular el **número de comercios por kilómetro cuadrado**, eliminamos el efecto distorsionador del tamaño de las fronteras y descubrimos la verdadera intensidad de la actividad económica en el suelo.
+
+.
+
+La herramienta matemática que utilizaremos en R para resolver esto es la **Densidad por Kilómetro Cuadrado**. No se preocupen por las matemáticas complejas; R se encargará de todo el trabajo pesado. Básicamente, tomaremos el conteo total de comercios que calculamos en el paso anterior y lo dividiremos entre la superficie geométrica exacta de cada polígono. Al transformar nuestros datos a una tasa estándar (comercios /(km\^2)), lograremos que cada unidad territorial, sin importar si es una metrópoli o un pequeño vecindario, hable exactamente el mismo idioma numérico.
+
+.
+
+Para lograrlo, aprenderemos a utilizar una de las funciones más potentes del paquete `sf`: **`st_area()`**. Esta instrucción le pide a R que analice las coordenadas que forman los límites de nuestros polígonos y calcule su superficie matemática exacta en tiempo real. Por defecto, R nos entregará este resultado en metros cuadrados, por lo que aplicaremos una conversión matemática muy sencilla dentro de nuestro código para transformarlo a kilómetros cuadrados. Verán lo gratificante que es ver cómo R calcula el tamaño de miles de áreas urbanas en un solo parpadeo.
+
+.
+
+Una vez que ejecutemos este proceso, pasaremos de ver simples mapas de conteo a generar verdaderos **Mapas de Densidad Comercial**. Visualmente, el cambio será impresionante. Polígonos muy grandes que antes robaban la atención de sus ojos en color oscuro debido a que sumaban muchos comercios solo por su gran tamaño, ahora tomarán su color correcto. Por el contrario, vecindarios pequeños pero hiper-activos comercialmente se iluminarán intensamente en el mapa, revelando los verdaderos "puntos calientes" del consumo alimentario que antes estaban completamente ocultos.
+
+.
+
+Desde la perspectiva de los negocios y el **Geomarketing**, este indicador normalizado es el estándar de oro para tomar decisiones estratégicas. Si una franquicia les pide asesoría para abrir una nueva sucursal, un mapa de totales les dirá simplemente dónde hay más tiendas hoy en día. En cambio, el mapa de densidad por kilómetro cuadrado les mostrará dónde el mercado está realmente saturado y compacto, o dónde existen zonas con baja densidad pero alta población que representan una oportunidad de oro para conquistar un nuevo nicho de clientes de manera eficiente.
+
+.
+
+Calculamos el area de los municipios y normalizamos el conteo por munipio:
+
+```{r}
+# La función st_area() calcula la superficie. Al dividir 
+# entre 1,000,000 transformamos los metros cuadrados nativos a kilómetros cuadrados.
+# Usamos as.numeric() para remover la etiqueta de unidad "m²" y poder hacer operaciones.
+
+municipios_normalizados <- conteo_unidades_comerciales %>%
+  mutate(
+    area_m2  = st_area(.),
+    area_km2 = as.numeric(area_m2) / 1000000,
+    densidad_comercial = total_comercios / area_km2
+  )
+```
+
+```{r}
+# Graficamos ahora usando la nueva variable normalizada: 'densidad_comercial'
+ggplot(data = municipios_normalizados) +
+  geom_sf(aes(fill = densidad_comercial), color = "white", size = 0.2) +
+  scale_fill_viridis_c(
+    option = "magma", 
+    direction = -1,  
+    name = "Comercios\npor Km²"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Densidad Comercial Normalizada (Municipios)",
+    subtitle = "Intensidad del consumo alimentario por kilómetro cuadrado",
+    caption = "Fuente: Taller de Análisis Espacial en R"
+  )
+```
+
+**1. El Verdadero Rostro de la Concentración: Intensidad Real vs. Volumen Absoluto**
+
+-   **Corrección del Sesgo por Tamaño**: Si comparamos este mapa con el primer mapa de totales absolutos, notaremos un cambio metodológico radical. Municipios extensos de la periferia (especialmente al norte y al oriente) que antes absorbían la atención visual y mostraban colores encendidos simplemente por ser grandes y acumular comercios, ahora se han "apagado" y muestran tonos amarillos muy claros. Su densidad real es baja: tienen pocos comercios por cada kilómetro cuadrado.
+
+-   **El Surgimiento del Núcleo Compacto**: Al dividir los comercios entre la superficie (km\^2), el mapa revela con precisión quirúrgica que la verdadera intensidad del mercado alimentario está concentrada de forma vertical en el centro geográfico. Los municipios centrales, que son territorialmente más pequeños pero albergan una actividad comercial masiva, se encienden en tonalidades negras e hiper-oscuras, superando con facilidad los 150 comercios por (km\^2).
+
+**2. Vinculación Directa con el Mapa de Densidad Absoluta (Conteo de Puntos)**
+
+-   **La Revelación de la Falacia Geométrica**: Al poner ambos mapas frente a frente con los alumnos, se hace evidente la necesidad de la normalización. El mapa previo de totales absolutos nos decía *dónde hay más volumen de negocios*, lo cual es útil para medir el tamaño bruto del mercado. Sin embargo, este nuevo mapa nos dice *dónde está más apretada y compacta la competencia*.
+
+**3. Aplicación Estratégica**
+
+-   **Indicador de Saturación del Suelo**: Esta tasa (Comercios por (km\^2)) representa el indicador real de fricción comercial y saturación. Los sectores oscuros nos hablan de un suelo urbano con un aprovechamiento comercial intensivo, donde el consumo alimentario *in situ* satura casi cada esquina disponible.
+
+.
+
+Calculamos el area de los ageb y normalizamos el conteo por ageb:
+
+```{r}
+ageb_normalizados <- conteo_por_ageb %>%
+  mutate(
+    area_m2  = st_area(.),
+    area_km2 = as.numeric(area_m2) / 1000000,
+    densidad_comercial = total_comercios / area_km2
+  )
+
+```
+
+```{r}
+# Graficamos ahora usando la nueva variable normalizada: 'densidad_comercial'
+ggplot(data = ageb_normalizados) +
+  # Renderizamos los polígonos de AGEB con la variable normalizada
+  geom_sf(aes(fill = densidad_comercial), color = NA) + 
+  
+  # Paleta de colores optimizada con control de extremos
+  scale_fill_viridis_c(
+    option = "magma", 
+    direction = -1,  
+    name = "Comercios\npor Km²",
+    # Modifica o remueve los límites según los valores máximos reales de tus datos
+    na.value = "#000004" # Los valores que superen el límite se pintarán del color más oscuro
+  ) +
+  
+  # Estética limpia de Sistema de Información Geográfica (SIG)
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40", size = 10),
+    legend.position = "right",
+    panel.grid = element_blank() # Quitamos la cuadrícula para limpiar el fondo
+  ) +
+  
+  # Etiquetas del mapa microurbano
+  labs(
+    title = "Densidad Comercial Normalizada (Nivel AGEB)",
+    subtitle = "Concentración real de consumo alimentario por kilómetro cuadrado",
+    caption = "Fuente: Taller de Análisis Espacial en R | Unidades Normalizadas"
+  )
+```
+
+**1. La Fragmentación del Territorio: Rompiendo la Ilusión Municipal**
+
+-   **De bloques homogéneos a un tejido complejo**: Al mirar este mapa junto al de escala municipal, la primera lección para la clase es evidente. El gran bloque oscuro y continuo que veíamos a nivel municipal desaparece. Ahora descubrimos que la inmensa mayoría de los AGEB de la metrópoli se mantienen en tonos claros (baja densidad, entre 0 y 300 comercios por km\^2), mientras que la verdadera saturación comercial ocurre en **pequeñas células hiper-concentradas**.
+
+-   **El poder de la micro-escala**: Esto demuestra el impacto del cambio de escala en los Sistemas de Información Geográfica (SIG). El análisis municipal promedia todo el territorio; el análisis por AGEB revela la realidad de las calles. Descubrimos que dentro de un municipio "altamente comercial" conviven barrios puramente residenciales o industriales con pequeños distritos gastronómicos.
+
+**2. Radiografía de los "Puntos Calientes" (Hotspots) Gastronómicos**
+
+-   **Densidades extremas en espacios reducidos**: La escala del mapa se dispara drásticamente. Mientras que a nivel municipal el rango máximo rondaba los 150 comercios por km\^2, a nivel AGEB la leyenda nos muestra concentraciones que **superan los 600 y 900 comercios por** km\^2 (los puntos negros y morados intensos en el mapa).
+
+-   **Localización de los nodos**: Explícales a los alumnos que estos AGEB ultra-densos representan el corazón de la actividad comercial *in situ*. Suelen ser zonas con uso de suelo mixto e intensivo: distritos de oficinas de alta densidad, centros históricos locales, o corredores donde se aprovecha al máximo el flujo peatonal masivo. En estas pocas manzanas, la competencia por capturar comensales es feroz.
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Matrices de vecindad
+
+.
+
+Ahora nos adentraremos en las **Matrices de Vecindad**. Hasta este momento, hemos aprendido a contar comercios y a calcular densidades de forma aislada, tratando a cada municipio o AGEB como si fuera una isla independiente en el mapa. Sin embargo, en el mundo real y especialmente en la economía, lo que ocurre en un territorio está profundamente influenciado por lo que pasa a su alrededor. Las matrices de vecindad son la herramienta matemática que utilizaremos en R para enseñarle a nuestro modelo a "ver" la geografía y a entender formalmente qué zonas están cerca de cuáles, abriendo la puerta a análisis espaciales mucho más avanzados.
+
+.
+
+Para comprender este concepto de una manera muy sencilla, imaginen que queremos modelar cómo se contagia el éxito o la competencia de un corredor gastronómico. Si un AGEB central se satura por completo de restaurantes, la demanda de locales comerciales comenzará a desbordarse de forma natural hacia los territorios que están pegados a él.
+
+.
+
+**Ningún territorio es ajeno a su entorno**. Al construir una matriz de vecindad, lo que hacemos es crear una infraestructura de datos donde R registra explícitamente quiénes son los "vecinos geográficos" de cada polígono. Es el equivalente a construir una agenda de contactos para cada colonia o municipio de la Zona Metropolitana, especificando con precisión quiénes comparten fronteras con quiénes.
+
+.
+
+En el análisis espacial existen diferentes criterios para definir qué se considera un "vecino", pero hoy nos enfocaremos en uno de los estándares más populares y potentes: la **Contigüidad Espacial de la Reina (o criterio *Queen*)**. Este nombre tan particular proviene directamente del juego de ajedrez. Hay que recordar cómo se mueve la pieza de la reina en el tablero, se puede desplazarse en cualquier dirección: hacia adelante, hacia los lados y también en diagonal. Al trasladar esta lógica a nuestro mapa urbano, el criterio de la Reina establece que dos AGEBs o municipios serán considerados vecinos oficiales si comparten **cualquier parte de su límite geográfico, ya sea una línea fronteriza completa o un solo punto de intersección (un vértice)**.
+
+.
+
+Para visualizar el criterio *Queen* en su mente, imaginen un crucero o una esquina donde se tocan las esquinas de cuatro manzanas diferentes. Si utilizáramos reglas más estrictas (como el criterio de la Torre, que solo acepta fronteras lineales largas), las manzanas que solo se tocan por la pura esquina en diagonal no serían consideradas vecinas. Sin embargo, bajo el enfoque de la Reina, esa pequeña unión diagonal es más que suficiente para que R las catalogue como vecinas directas. Este criterio es sumamente útil en estudios de consumo alimentario urbano porque los flujos peatonales y la competencia económica cruzan con extrema facilidad a través de las esquinas de las calles y los cruces viales.
+
+.
+
+La implementación técnica en nuestro taller será sorprendentemente fluida gracias al ecosistema de R. En lugar de calcular estas complejas intersecciones geométricas a mano, utilizaremos funciones especializadas de paquetes modernos de análisis espacial, como `spdep` o `sfdep`. Con una sola línea de código, la computadora analizará las miles de coordenadas que componen el mapa de la ZMVM, detectará cada vértice y cada línea compartida, y nos devolverá una lista estructurada de vecindades en cuestión de segundos. Verán que lo que antes requería software de escritorio especializado y clics interminables, aquí se resuelve con un script limpio, transparente y totalmente automatizado.
+
+.
+
+Una vez que R termine de calcular estas relaciones, el resultado final se estructurará en una **Matriz de Pesos Espaciales**. Piensen en esto como una gran tabla cuadrada donde tanto las filas como las columnas representan a nuestros AGEBs o municipios. Si el territorio de la fila "A" es vecino del territorio de la columna "B" bajo el criterio de la Reina, la computadora colocará un número uno (\\(1\\)) en esa intersección; si no se tocan en absoluto, colocará un cero (\\(0\\)). Posteriormente, aprenderemos a estandarizar esta matriz para que R divida la influencia de forma equitativa entre el número total de vecinos que tenga cada zona, asegurando un modelo equilibrado.
+
+.
+
+El verdadero poder de configurar este criterio de la Reina radica en las aplicaciones analíticas que desbloquearemos a partir de ahora. Con esta matriz configurada, dejaremos atrás los mapas descriptivos y entraremos formalmente a la estadística espacial. Podremos calcular indicadores de autocorrelación espacial, como el famoso Índice de Moran, que nos dirá matemáticamente si los "puntos calientes" de alta densidad comercial que descubrimos en la sección anterior están agrupados de forma intencional por el mercado, o si su distribución en la metrópoli es puramente aleatoria.
+
+.
+
+Dominar la configuración de matrices de vecindad transformará por completo su perfil como analistas de datos. Es el conocimiento frontera que separa a un cartógrafo tradicional de un científico de datos espaciales. Al comprender el criterio de la Reina, ustedes serán capaces de modelar dinámicas urbanas complejas, analizar corredores comerciales continuos y justificar metodológicamente por qué ciertos vecindarios se comportan como espejos de sus zonas colindantes.
+
+.
+
+Para optimizar los tiempos de cómputo y lograr que los mapas sean **legibles y visualmente impactantes**, nos enfocaremos exclusivamente en la escala municipal. Trabajar con los municipios de la ZMVM nos permitirá trazar una red de vecindades limpia y clara, evitando la saturación de líneas que ocurriría si usáramos los miles de pequeños polígonos de los AGEB.
+
+```{r}
+# Extracción de Centroides para Graficar la Red 
+# calcular el "punto centro" (centroide) de cada municipio.
+centroides <- st_coordinates(st_centroid(municipios_normalizados))
+```
+
+```{r}
+# Cálculo de Vecindad Criterio Reina (Queen) 
+# poly2nb analiza los límites geográficos. 'queen = TRUE' le indica a R que 
+# acepte fronteras compartidas tanto por líneas como por un solo punto (vértice).
+vecinos_queen <- poly2nb(municipios_normalizados, queen = TRUE)
+```
+
+```{r}
+# Cambiamos el nombre de los elementos de la lista usando la clave geográfica
+names(vecinos_queen) <- municipios_normalizados$cvegeo
+```
+
+```{r}
+print("Resumen estadístico de las conexiones municipales:")
+print(summary(vecinos_queen))
+```
+
+**1. Radiografía General de la Zona Metropolitana (El Tamaño de la Red)**
+
+-   **Regiones Analizadas (`Number of regions: 76`)**: La lista confirma que el algoritmo está procesando los **76 municipios** que integran la Zona Metropolitana del Valle de México (ZMVM). Cada uno de estos municipios representa un "nodo" dentro de nuestro sistema.
+
+-   **Enlaces Activos (`Number of nonzero links: 400`)**: R detectó exactamente **400 fronteras compartidas** bajo el criterio de la Reina. Esto significa que si sumáramos todas las conexiones cian que dibujamos en nuestro mapa anterior, contaríamos 400 líneas de unión en toda la metrópoli.
+
+**2. Conectividad Promedio y la Leyenda del Tablero (`Average number of links: 5.26`)**
+
+-   **El número mágico**: En promedio, cada municipio de la ZMVM colinda con **5.26 vecinos**.
+
+-   **Interpretación urbana**: Este número nos habla de la fragmentación del territorio. Un promedio cercano a 5 o 6 es sumamente saludable para un análisis de contigüidad areal, ya que nos indica una red urbana compacta y fuertemente cohesionada, ideal para estudiar cómo se propaga el mercado de consumo alimentario de un territorio a otro.
+
+**3. La Densidad de la Matriz (`Percentage nonzero weights: 6.92%`)**
+
+-   **Una matriz "dispersa"**: Este porcentaje nos dice que de todas las combinaciones posibles de vecindad en una tabla de 76 por 76 posiciones, solo el **6.92%** contiene un número uno (1), mientras que el resto son ceros (0).
+
+-   **Lección geográfica**: Un municipio del extremo norte de la ZMVM jamás tocará las fronteras de un municipio del extremo sur; por ende, la gran mayoría de las celdas de nuestra matriz espacial estarán vacías.
+
+**4. Análisis de los Extremos Urbanos (Aislamiento vs. Centralidad)**
+
+-   **Los Municipios Menos Conectados (`2 least connected regions: 36 y 50`)**: R identifica dos municipios (identificados con los índices internos 36 y 50) que son virtualmente "penínsulas" urbanas, pues **solo tienen 1 vecino**.
+
+    -   *Impacto en consumo*: Para el análisis de mercado, estas zonas están geográficamente aisladas. El flujo comercial de alimentos difícilmente se "desbordará" hacia ellas de forma natural.
+
+-   **El Corazón Metropolitano (`1 most connected region: 35`)**: En el extremo opuesto, el municipio número 35 funciona como el gran nodo de la ZMVM, estando conectado con **11 vecinos simultáneamente**.
+
+    -   *Impacto en consumo*: Este es un punto estratégico crítico de la red. Cualquier cambio, saturación o tendencia en el consumo de alimentos en este municipio central afectará en cadena a 11 mercados colindantes. Es el centro neurálgico del análisis.
+
+**5. Distribución de los Enlaces (`Link number distribution`)**
+
+-   La tabla nos muestra la forma de la red: la mayoría de los municipios (16 de ellos) tienen exactamente 5 vecinos, seguidos por 13 municipios con 4 vecinos y 12 municipios con 6 vecinos. Esto nos demuestra que la estructura urbana de la ZMVM sigue una distribución de campana muy equilibrada, donde la gran masa crítica metropolitana comparte entre 4 y 6 frontera.
+
+    .
+
+```{r}
+# Convertimos la lista de vecinos a una tabla de conexiones (Origen -> Destino)
+conexiones <- data.frame(
+  desde = rep(1:length(vecinos_queen), lengths(vecinos_queen)),
+  hacia = unlist(vecinos_queen)
+)
+
+# Creamos líneas geográficas rectas uniendo el centroide origen con el centroide destino
+lineas_red <- lapply(1:nrow(conexiones), function(i) {
+  p1 <- centroides[conexiones$desde[i], ]
+  p2 <- centroides[conexiones$hacia[i], ]
+  st_linestring(rbind(p1, p2))
+})
+
+#Transformamos las líneas en un objeto espacial sf oficial con el CRS correcto
+objeto_red_sf <- st_sf(
+  geometry = st_sfc(lineas_red, crs = st_crs(municipios_normalizados))
+)
+```
+
+```{r}
+# Grafico
+ggplot() +
+  # Capa 1: Mapa base de municipios con un relleno gris neutro y uniforme
+  geom_sf(
+    data = municipios_normalizados, 
+    fill = "gray95", 
+    color = "gray70", 
+    size = 0.4
+  ) +
+  
+  # Capa 2: La Red de Vecindad (Líneas de conexión en color cian)
+  geom_sf(
+    data = objeto_red_sf, 
+    color = "cyan3", 
+    size = 0.7
+  ) +
+  
+  # Capa 3: Nodos de los centroides municipales (Puntos en rosa mexicano)
+  geom_point(
+    data = as.data.frame(centroides), 
+    aes(x = X, y = Y), 
+    color = "deeppink", 
+    size = 2
+  ) +
+  
+  # Estética limpia de alta gama para Sistemas de Información Geográfica
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 13, color = "gray10"),
+    plot.subtitle = element_text(color = "gray40", size = 9),
+    # Eliminamos las líneas de cuadrícula y etiquetas de coordenadas para limpiar el fondo
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank()
+  ) +
+  
+  # Etiquetas de la sesión práctica
+  labs(
+    title = "Red de Vecindad Espacial sobre Mapa Base (Criterio Queen)",
+    subtitle = "Estructura topológica y límites municipales de la ZMVM",
+    caption = "Fuente: Taller de Análisis Espacial en R | Conectividad Topológica"
+  )
+```
+
+.
+
+.
+
+------------------------------------------------------------------------
+
+## Cálculo de Lag Espacial
+
+.
+
+Ahora aprenderemos a calcular el **Lag Espacial (o Rezagado Espacial)**, una de las variables más poderosas de la econometría y la estadística geográfica. Hasta ahora, hemos calculado la densidad comercial de cada municipio de forma independiente. Sin embargo, para entender el mercado de consumo alimentario *in situ*, evaluar un territorio de manera aislada es insuficiente.
+
+.
+
+El Lag Espacial es la herramienta que nos permite computar el promedio de la densidad comercial de todos los municipios vecinos que rodean a una zona específica. En términos sencillos, es una técnica que le permite a R mirar alrededor de cada frontera y responder a la pregunta: *"¿Qué tan comercial es el municipio o territorio que me rodea?"*.
+
+.
+
+Para comprender este concepto sin enredarnos en ecuaciones, utilicemos una analogía muy cotidiana: el promedio de calificaciones escolar. Si tú tienes una calificación de 9, esa es tu nota absoluta. Pero si calculas el promedio de las notas de tus cinco mejores amigos, obtendrás una métrica que describe el rendimiento de tu entorno cercano. El Lag Espacial hace exactamente eso con los mapas. Toma un municipio determinado, busca en la matriz de vecindad de la Reina quiénes son sus colindantes, extrae las densidades comerciales de esos vecinos, las suma y calcula su promedio. El resultado es un nuevo indicador que describe la atmósfera comercial de los alrededores.
+
+.
+
+El principal objetivo técnico de calcular este indicador es lograr un **Suavizamiento de Fronteras**. En la realidad urbana, los flujos peatonales, los comensales y el éxito de los restaurantes no se detienen abruptamente cuando cruzas una calle que divide a un municipio de otro. Las fronteras políticas son líneas artificiales e invisibles para la economía. Si un municipio tiene una densidad baja pero está completamente rodeado por monstruos comerciales hiper-saturados, es muy probable que su dinámica económica real sea mucho más activa de lo que sus datos aislados sugieren. El Lag Espacial difumina matemáticamente esas fronteras rígidas, creando una transición suave y continua que refleja con mayor fidelidad el comportamiento real del mercado en las calles.
+
+.
+
+Para ejecutar este cómputo de manera estadísticamente correcta, R realiza un proceso llamado **Estandarización por Renglones de la Matriz de Pesos**. Imaginen que el municipio "A" tiene solo 2 vecinos y el municipio "B" tiene 10 vecinos. Si sumáramos las densidades de los vecinos directamente, el municipio "B" siempre tendría un valor gigantesco simplemente por estar más conectado. Al estandarizar la matriz, R divide la influencia de manera equitativa: a cada uno de los 2 vecinos del municipio "A" les asigna un peso de 0.5 (1/2), y a cada uno de los 10 vecinos del municipio "B" les asigna un peso de 0.1 (1/10). De esta forma, garantizamos que el promedio resultante sea perfectamente comparable entre todas las regiones, sin importar cuántas conexiones tengan.
+
+.
+
+La magia detrás de este cálculo se ejecuta en R con una sola instrucción del paquete `spdep`: la función **`lag.listw()`**. Al pasarle a esta función nuestra matriz estandarizada y nuestra variable de densidad comercial por kilómetro cuadrado, R procesará de forma automática las complejas relaciones topológicas de la ZMVM en milisegundos. La computadora cruzará la información de cada enlace que dibujamos en nuestro mapa de red anterior y creará una nueva columna en nuestra base de datos. Es un excelente ejemplo de cómo la programación resuelve problemas algebraicos masivos que a mano nos tomarían semanas completar.
+
+.
+
+Al graficar los resultados del Lag Espacial, el impacto visual frente a un mapa tradicional es impresionante y sumamente didáctico. Verán cómo desaparece el efecto de "tablero de ajedrez" (donde un polígono oscuro puede estar pegado a uno completamente claro sin transición alguna). En su lugar, el mapa se transformará en un degradado armónico y elegante que revela con claridad los **grandes corredores gastronómicos regionales de la metrópoli**. Las anomalías o valores atípicos aislados se suavizan, permitiéndonos identificar con precisión los verdaderos epicentros comerciales que extienden su influencia económica hacia la periferia urbana.
+
+.
+
+Desde la perspectiva de la **Inteligencia de Negocios y Geomarketing**, el Lag Espacial abre las puertas a estrategias de localización increíblemente precisas. Si una cadena de restaurantes busca expandirse, un análisis básico podría sugerir abrir un local únicamente en los municipios que ya están saturados (los centros oscuros). Sin embargo, el mapa de Lag Espacial les revelará municipios colindantes que actualmente tienen densidades bajas pero que gozan de un entorno vecinal hiper-comercial. Estas zonas representan verdaderas oportunidades de oro: terrenos o locales comerciales potencialmente más baratos, pero con una altísima exposición al flujo de clientes del vecindario contiguo.
+
+.
+
+```{r}
+# 11.1. Estandarización de la Matriz de Vecindad 
+# Usamos nb2listw(). El argumento style = "W" (Row-standardized) # divide el peso de cada vecino de manera equitativa (1 / número total de vecinos).
+# Esto nos permite calcular promedios reales y comparables entre municipios.
+matriz_pesos <- nb2listw(vecinos_queen, style = "W", zero.policy = TRUE)
+```
+
+```{r}
+# 11.2. Computación del Lag Espacial 
+# lag.listw() toma los pesos espaciales y multiplica la 
+# densidad de cada municipio vecino para obtener el promedio del entorno de cada uno.
+
+municipios_normalizados <- municipios_normalizados %>%
+  mutate(
+    lag_densidad = lag.listw(matriz_pesos, densidad_comercial, zero.policy = TRUE)
+  )
+
+```
+
+```{r}
+print("Muestra de datos con la nueva columna de Lag Espacial:")
+print(head(municipios_normalizados[, c("cvegeo", "densidad_comercial", "lag_densidad")]))
+```
+
+```{r}
+ggplot(data = municipios_normalizados) +
+  # Pintamos los polígonos usando la variable suavizada (Lag Espacial)
+  geom_sf(aes(fill = lag_densidad), color = "white", size = 0.3) +
+  
+  # Paleta de colores consistente con la fase anterior del taller
+  scale_fill_viridis_c(
+    option = "inferno", 
+    direction = -1,  
+    name = "Lag de\nDensidad"
+  ) +
+  
+  # Estética limpia de alta gama
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 13, color = "gray10"),
+    plot.subtitle = element_text(color = "gray40", size = 9),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  ) +
+  
+  labs(
+    title = "Lag Espacial de Densidad Comercial (Municipios)",
+    subtitle = "Suavizamiento de fronteras y promedio del entorno comercial",
+    caption = "Fuente: Taller de Análisis Espacial en R | Modelado Areal"
+  )
+```
+
+Esta es la interpretación de nuestro **Lag Espacial de Densidad Comercial** a nivel municipal, y es el momento perfecto para entender por qué valió la pena hacer todo este proceso matemático:
+
+**1. El Desvanecimiento del "Efecto Ajedrez"**
+
+-   Si recuerdan nuestro mapa de densidad absoluta, la mancha urbana parecía un tablero con saltos de color muy bruscos entre un municipio y otro.
+
+-   Observen cómo ahora el mapa muestra una transición **suave, armónica y continua**. Al promediar la realidad de los vecinos, los límites políticos artificiales desaparecen de la ecuación económica y emerge la verdadera geografía del consumo de alimentos en la ZMVM.
+
+**2. La Consolidación del "Gran Núcleo" Metropolitano**
+
+-   El mapa nos revela un impresionante **epicentro hiper-comercial** pintado en tonos negros y morados oscuros en el centro geográfico de la cuenca (alcanzando y superando los 100 comercios promedio a su alrededor).
+
+-   Esto demuestra matemáticamente la existencia de una macro-región centralizada donde la oferta gastronómica *in situ* no es un fenómeno aislado de un solo municipio, sino un continuo urbano densamente integrado que desborda sus fronteras.
+
+**3. Municipios con Efecto "Desborde" (Spatial Spillover)**
+
+-   Presten especial atención a los municipios de color naranja intermedio (valores entre 50 y 75) que abrazan al núcleo oscuro. Muchos de estos territorios tenían densidades individuales bajas en mapas anteriores.
+
+-   Sin embargo, al calcular el Lag Espacial, se "encienden". ¿Por qué? Porque aunque ellos tengan menos comercios en su propio suelo, sus fronteras colindan directamente con los gigantes comerciales del centro. Están expuestos a un impresionante flujo de comensales y dinamismo económico por pura **vecindad geográfica**.
+
+**4. La Calma de la Periferia Regional**
+
+-   Conforme la vista se desplaza hacia los extremos norte, sur profundo y oriente (zonas en color amarillo claro), el rezago cae por debajo de los 25 comercios.
+
+-   Esto les confirma que las extensas periferias de la ZMVM no solo tienen baja densidad interna, sino que están rodeadas de vecinos igualmente habitacionales, rurales o de reserva industrial, consolidando un patrón espacial perfectamente ordenado de centro a periferia.
+
+.
+
+.
+
+Borramos todo el entorno
+
+```{r}
+# Limpiar por completo el entorno de trabajo (borrar todos los objetos de la memoria)
+rm(list = ls())
+```
+
+.
+
+.
+
+Muchas gracias por completar el tercer módulo.
